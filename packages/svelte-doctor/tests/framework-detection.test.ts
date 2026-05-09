@@ -31,8 +31,60 @@ describe("detectProject", () => {
 
     expect(info.framework).toBe("sveltekit");
     expect(info.svelteMajor).toBe(5);
+    expect(info.svelteVersionSource).toBe("package.json");
     expect(info.packageManager).toBe("pnpm");
     expect(info.hasTypeScript).toBe(true);
+  });
+
+  it("detects Svelte 4 from package.json", () => {
+    writeJson(join(cwd, "package.json"), {
+      dependencies: { svelte: "^4.2.0" },
+      devDependencies: { vite: "^4.0.0" },
+    });
+
+    const info = detectProject(cwd);
+
+    expect(info.svelteMajor).toBe(4);
+    expect(info.svelteVersionSource).toBe("package.json");
+    expect(info.framework).toBe("vite-svelte");
+  });
+
+  it("falls back to node_modules/svelte when version is workspace:*", () => {
+    writeJson(join(cwd, "package.json"), {
+      dependencies: { svelte: "workspace:*" },
+    });
+    mkdirSync(join(cwd, "node_modules", "svelte"), { recursive: true });
+    writeJson(join(cwd, "node_modules", "svelte", "package.json"), {
+      name: "svelte",
+      version: "4.2.7",
+    });
+
+    const info = detectProject(cwd);
+
+    expect(info.svelteMajor).toBe(4);
+    expect(info.svelteVersionSource).toBe("node_modules");
+  });
+
+  it("assumes Svelte 5 when nothing is resolvable", () => {
+    writeJson(join(cwd, "package.json"), {
+      dependencies: { svelte: "next" },
+    });
+
+    const info = detectProject(cwd);
+
+    expect(info.svelteMajor).toBe(5);
+    expect(info.svelteVersionSource).toBe("assumed");
+  });
+
+  it("respects svelteMajorOverride", () => {
+    writeJson(join(cwd, "package.json"), {
+      dependencies: { svelte: "^5.0.0" },
+    });
+
+    const info = detectProject(cwd, { svelteMajorOverride: 4 });
+
+    expect(info.svelteMajor).toBe(4);
+    expect(info.svelteVersionSource).toBe("override");
   });
 
   it("detects Vite + Svelte SPA when svelte+vite present without kit", () => {
@@ -47,13 +99,15 @@ describe("detectProject", () => {
     expect(info.packageManager).toBe("npm");
   });
 
-  it("returns unknown framework when no svelte present", () => {
+  it("returns unknown framework but assumed Svelte 5 when no svelte present", () => {
     writeJson(join(cwd, "package.json"), { dependencies: { react: "^18" } });
 
     const info = detectProject(cwd);
 
     expect(info.framework).toBe("unknown");
-    expect(info.svelteMajor).toBeNull();
+    expect(info.svelteVersion).toBeNull();
+    expect(info.svelteMajor).toBe(5);
+    expect(info.svelteVersionSource).toBe("assumed");
   });
 
   it("throws when root does not exist", () => {
