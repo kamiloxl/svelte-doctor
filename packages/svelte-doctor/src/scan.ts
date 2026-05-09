@@ -53,6 +53,8 @@ export interface ScanOptions {
   configOverrides?: Partial<SvelteDoctorConfig>;
   /** Workspace sub-project name(s), comma-separated. Resolved against project root. */
   project?: string;
+  /** Override detected svelte major. Used by --svelte-version CLI flag. */
+  svelteMajorOverride?: 4 | 5;
   /** Optional callback invoked when scan moves between stages (for spinner UX). */
   onStage?: (stage: ScanStage) => void;
 }
@@ -80,16 +82,24 @@ function categoryFor(ruleId: string): Category {
   return allRuleMeta().find((m) => m.id === bare)?.category ?? "architecture";
 }
 
+function pickPreset(project: ProjectInfo): Linter.Config {
+  if (project.svelteMajor === 4) {
+    return project.framework === "sveltekit"
+      ? svelteDoctorPlugin.configs["svelte4-sveltekit"]
+      : svelteDoctorPlugin.configs.svelte4;
+  }
+  return project.framework === "sveltekit"
+    ? svelteDoctorPlugin.configs.sveltekit
+    : svelteDoctorPlugin.configs.recommended;
+}
+
 function buildEslint(
   project: ProjectInfo,
   ignoreRules: string[],
   ignoreFiles: string[],
   userConfigs: Linter.Config[],
 ): ESLint {
-  const baseConfig =
-    project.framework === "sveltekit"
-      ? svelteDoctorPlugin.configs.sveltekit
-      : svelteDoctorPlugin.configs.recommended;
+  const baseConfig = pickPreset(project);
   const overrideRules: Linter.RulesRecord = Object.fromEntries(
     ignoreRules.map((id) => [id, "off" as const]),
   );
@@ -342,7 +352,9 @@ export async function scan(
 ): Promise<DiagnoseResult> {
   const onStage = options.onStage ?? (() => {});
   onStage("detecting");
-  const rootProject = detectProject(rootInput);
+  const rootProject = detectProject(rootInput, {
+    svelteMajorOverride: options.svelteMajorOverride,
+  });
   const workspaceProjects = await selectProjects(
     rootProject.root,
     options.project,
@@ -362,7 +374,9 @@ export async function scan(
   let mode: DiagnoseResult["mode"] = "full";
   let diffInfo: DiagnoseResult["diffInfo"] | undefined;
   for (const ws of workspaceProjects) {
-    const subProject = detectProject(ws.root);
+    const subProject = detectProject(ws.root, {
+      svelteMajorOverride: options.svelteMajorOverride,
+    });
     const sub = await scanSingleProject(subProject, options);
     aggregated.push(...sub.diagnostics);
     mode = sub.mode;
