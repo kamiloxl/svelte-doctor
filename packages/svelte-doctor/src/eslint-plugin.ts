@@ -12,6 +12,10 @@ import { rule as noHrefJavascript } from "./plugin/rules/security/no-href-javasc
 import { rule as serverOnlyImportInClient } from "./plugin/rules/sveltekit/server-only-import-in-client.js";
 import { rule as noFetchInLoadWithoutEvent } from "./plugin/rules/sveltekit/no-fetch-in-load-without-event.js";
 import { rule as componentTooLarge } from "./plugin/rules/architecture/component-too-large.js";
+import { rule as noFetchInOnMount } from "./plugin/rules/svelte4/no-fetch-in-onMount.js";
+import { rule as noMutationOfExportLet } from "./plugin/rules/svelte4/no-mutation-of-export-let.js";
+import { rule as preferReactiveStatement } from "./plugin/rules/svelte4/prefer-reactive-statement.js";
+import { rule as noLeakedSubscriptions } from "./plugin/rules/svelte4/no-leaked-subscriptions.js";
 
 const universalRules: Record<string, Rule.RuleModule> = {
   "no-fetch-in-effect": noFetchInEffect,
@@ -31,9 +35,17 @@ const sveltekitOnlyRules: Record<string, Rule.RuleModule> = {
   "no-fetch-in-load-without-event": noFetchInLoadWithoutEvent,
 };
 
+const svelte4OnlyRules: Record<string, Rule.RuleModule> = {
+  "no-fetch-in-onMount": noFetchInOnMount,
+  "no-mutation-of-export-let": noMutationOfExportLet,
+  "prefer-reactive-statement": preferReactiveStatement,
+  "no-leaked-subscriptions": noLeakedSubscriptions,
+};
+
 const allRules: Record<string, Rule.RuleModule> = {
   ...universalRules,
   ...sveltekitOnlyRules,
+  ...svelte4OnlyRules,
 };
 
 const recommendedRules: Linter.RulesRecord = {
@@ -55,6 +67,23 @@ const sveltekitRules: Linter.RulesRecord = {
   [`${RULE_PREFIX}/no-fetch-in-load-without-event`]: "error",
 };
 
+const svelte4UniversalRules: Linter.RulesRecord = {
+  [`${RULE_PREFIX}/no-fetch-in-onMount`]: "error",
+  [`${RULE_PREFIX}/no-mutation-of-export-let`]: "error",
+  [`${RULE_PREFIX}/prefer-reactive-statement`]: "warn",
+  [`${RULE_PREFIX}/no-leaked-subscriptions`]: "warn",
+  [`${RULE_PREFIX}/no-array-index-as-each-key`]: "warn",
+  [`${RULE_PREFIX}/no-unsafe-html-binding`]: "error",
+  [`${RULE_PREFIX}/no-href-javascript`]: "error",
+  [`${RULE_PREFIX}/component-too-large`]: "warn",
+};
+
+const svelte4SveltekitRules: Linter.RulesRecord = {
+  ...svelte4UniversalRules,
+  [`${RULE_PREFIX}/server-only-import-in-client`]: "error",
+  [`${RULE_PREFIX}/no-fetch-in-load-without-event`]: "error",
+};
+
 const plugin = {
   meta: { name: RULE_PREFIX, version: "0.0.1" },
   rules: allRules,
@@ -72,11 +101,33 @@ const sveltekit: Linter.Config = {
   rules: sveltekitRules,
 };
 
+const svelte4: Linter.Config = {
+  name: `${RULE_PREFIX}/svelte4`,
+  plugins: { [RULE_PREFIX]: plugin },
+  rules: svelte4UniversalRules,
+};
+
+const svelte4Sveltekit: Linter.Config = {
+  name: `${RULE_PREFIX}/svelte4-sveltekit`,
+  plugins: { [RULE_PREFIX]: plugin },
+  rules: svelte4SveltekitRules,
+};
+
 const exported: ESLint.Plugin & {
-  configs: { recommended: Linter.Config; sveltekit: Linter.Config };
+  configs: {
+    recommended: Linter.Config;
+    sveltekit: Linter.Config;
+    svelte4: Linter.Config;
+    "svelte4-sveltekit": Linter.Config;
+  };
 } = {
   ...plugin,
-  configs: { recommended, sveltekit },
+  configs: {
+    recommended,
+    sveltekit,
+    svelte4,
+    "svelte4-sveltekit": svelte4Sveltekit,
+  },
 };
 
 export default exported;
@@ -94,6 +145,8 @@ export const RECOMMENDED_RULE_IDS: string[] = [
   "no-mutation-of-props",
   "no-circular-reactivity",
   "prefer-derived-over-effect",
+  "no-fetch-in-onMount",
+  "no-mutation-of-export-let",
   "no-unsafe-html-binding",
   "no-href-javascript",
   "server-only-import-in-client",
