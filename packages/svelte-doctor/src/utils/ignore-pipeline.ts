@@ -5,6 +5,7 @@ import {
   RULE_PREFIX,
 } from "../constants.js";
 import { isPathVendoredOrGenerated, readGitAttributes } from "./gitattributes.js";
+import { expandToFileAndChildren, readIgnoreFiles } from "./ignore-files.js";
 import type { Diagnostic, IgnoreOverride } from "../types.js";
 
 export interface IgnorePipelineOptions {
@@ -47,6 +48,9 @@ export function createIgnorePipeline(
   options: IgnorePipelineOptions,
 ): IgnorePipeline {
   const gitAttributes = readGitAttributes(options.projectRoot);
+  const fileSystemIgnorePatterns = expandToFileAndChildren(
+    readIgnoreFiles(options.projectRoot),
+  );
 
   const toRel = (absolutePath: string): string =>
     relative(options.projectRoot, absolutePath).replace(/\\/g, "/");
@@ -55,6 +59,7 @@ export function createIgnorePipeline(
     const rel = toRel(absolutePath);
     if (pathInIgnoredDirectory(rel)) return true;
     if (isPathVendoredOrGenerated(rel, gitAttributes)) return true;
+    if (matchesAny(rel, fileSystemIgnorePatterns)) return true;
     if (matchesAny(rel, options.ignoreFiles)) return true;
     return false;
   };
@@ -63,6 +68,7 @@ export function createIgnorePipeline(
     const rel = toRel(diagnostic.file);
     if (pathInIgnoredDirectory(rel)) return false;
     if (isPathVendoredOrGenerated(rel, gitAttributes)) return false;
+    if (matchesAny(rel, fileSystemIgnorePatterns)) return false;
     if (matchesAny(rel, options.ignoreFiles)) return false;
     for (const override of options.ignoreOverrides) {
       if (!matchesAny(rel, override.files)) continue;

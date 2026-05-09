@@ -15,7 +15,7 @@ One command scans your codebase and outputs a **0–100 health score** with acti
 ## Install
 
 ```bash
-npx -y svelte-doctor@latest .
+npx -y svelte-doctor-cli@latest .
 ```
 
 You'll get a score (75+ Great, 50–74 Needs work, under 50 Critical) and a list of issues. Rules toggle automatically based on detected framework.
@@ -23,7 +23,7 @@ You'll get a score (75+ Great, 50–74 Needs work, under 50 Critical) and a list
 ## Install for your coding agent
 
 ```bash
-npx -y svelte-doctor@latest install
+npx -y svelte-doctor-cli@latest install
 ```
 
 Detects Claude Code, Cursor, Codex, Windsurf, Copilot or OpenCode and installs a skill that teaches the agent to run `svelte-doctor . --diff` after every edit.
@@ -67,7 +67,7 @@ Stacked comments and multi-line opening tags work as expected. If a suppression 
 
 ```js
 // eslint.config.js
-import svelteDoctor from "svelte-doctor/eslint-plugin";
+import svelteDoctor from "svelte-doctor-cli/eslint-plugin";
 
 export default [
   svelteDoctor.configs.recommended,
@@ -102,7 +102,7 @@ Subcommand: `install` — install the skill for AI coding agents.
 ## Node.js API
 
 ```ts
-import { diagnose, toJsonReport } from "svelte-doctor/api";
+import { diagnose, toJsonReport } from "svelte-doctor-cli/api";
 
 const result = await diagnose("./");
 console.log(result.score);       // { score: 82, label: "Great" }

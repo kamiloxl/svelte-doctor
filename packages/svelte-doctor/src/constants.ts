@@ -1,6 +1,6 @@
 import type { Category, ScoreLabel, Severity } from "./types.js";
 
-export const VERSION = "0.0.1";
+export const VERSION = "0.1.0";
 
 export const SCORE_THRESHOLDS = {
   GREAT: 75,

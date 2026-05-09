@@ -82,3 +82,20 @@ const exported: ESLint.Plugin & {
 export default exported;
 export { recommendedRules, sveltekitRules };
 export const allRuleIds = Object.keys(allRules);
+
+/**
+ * "Recommended" subset for the interactive scope prompt: every error-severity
+ * rule plus a couple of warning rules that catch real, non-stylistic bugs.
+ * Excludes opinionated/architecture warnings (component-too-large, cascading,
+ * cleanup, array-index-as-key) — those belong in "All" or "Custom".
+ */
+export const RECOMMENDED_RULE_IDS: string[] = [
+  "no-fetch-in-effect",
+  "no-mutation-of-props",
+  "no-circular-reactivity",
+  "prefer-derived-over-effect",
+  "no-unsafe-html-binding",
+  "no-href-javascript",
+  "server-only-import-in-client",
+  "no-fetch-in-load-without-event",
+];

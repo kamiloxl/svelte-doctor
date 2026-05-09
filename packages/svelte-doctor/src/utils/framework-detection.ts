@@ -87,3 +87,28 @@ export function detectProject(rootInput: string): ProjectInfo {
     packageManager: detectPackageManager(root, pkg),
   };
 }
+
+export interface PreflightResult {
+  ok: boolean;
+  reason?: string;
+  hint?: string;
+}
+
+export function preflightSvelteProject(project: ProjectInfo): PreflightResult {
+  if (!project.svelteVersion && project.framework === "unknown") {
+    return {
+      ok: false,
+      reason:
+        "This directory does not look like a Svelte project — no `svelte` dependency found in package.json.",
+      hint: "Run svelte-doctor from your Svelte project root, or create a Svelte app first (e.g. `npm create svelte@latest`).",
+    };
+  }
+  if (project.svelteMajor !== null && project.svelteMajor < 5) {
+    return {
+      ok: false,
+      reason: `Detected Svelte ${project.svelteVersion} — svelte-doctor targets Svelte 5 (runes).`,
+      hint: "Upgrade to Svelte 5 (`pnpm add svelte@^5`) or wait for legacy Svelte 4 support.",
+    };
+  }
+  return { ok: true };
+}

@@ -10,7 +10,11 @@ import {
   labelForScore,
 } from "./constants.js";
 import { allRuleMeta } from "./plugin/rule-meta.js";
-import { detectProject } from "./utils/framework-detection.js";
+import {
+  detectProject,
+  preflightSvelteProject,
+} from "./utils/framework-detection.js";
+import { SvelteDoctorError } from "./utils/error-handling.js";
 import { loadConfig, resolveConfig } from "./utils/config-loader.js";
 import { applySuppressionsAndDetectUnused } from "./utils/suppression.js";
 import {
@@ -345,6 +349,12 @@ export async function scan(
   );
 
   if (!workspaceProjects.length) {
+    const preflight = preflightSvelteProject(rootProject);
+    if (!preflight.ok) {
+      throw new SvelteDoctorError(preflight.reason ?? "Preflight failed", {
+        hint: preflight.hint,
+      });
+    }
     return scanSingleProject(rootProject, options);
   }
 

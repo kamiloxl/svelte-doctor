@@ -3,7 +3,14 @@ import ora from "ora";
 import pc from "picocolors";
 import { resolve, relative } from "node:path";
 import { encodeAnnotation } from "./utils/annotation-encoding.js";
+import { allRuleIds, RECOMMENDED_RULE_IDS } from "./eslint-plugin.js";
 import { renderAmbulance, renderDoctorBanner } from "./utils/banner.js";
+import {
+  buildJsonErrorReport,
+  extractMissingPluginHint,
+  formatErrorChain,
+  SvelteDoctorError,
+} from "./utils/error-handling.js";
 import { renderSignature } from "./utils/signature.js";
 import {
   CATEGORY_LABEL,
@@ -43,6 +50,7 @@ interface CliOptions {
   project?: string;
   watch: boolean;
   respectInlineDisables: boolean;
+  scope?: "recommended" | "all" | "custom";
 }
 
 function paintLabel(label: ScoreLabel): string {
@@ -298,9 +306,50 @@ const STAGE_LABELS: Record<string, string> = {
   "post-processing": "Computing score…",
 };
 
+function isMachineMode(opts: CliOptions): boolean {
+  return Boolean(
+    opts.json ||
+      opts.score ||
+      opts.annotations ||
+      opts.explain ||
+      opts.why ||
+      opts.watch,
+  );
+}
+
+async function pickEnabledRuleIds(
+  opts: CliOptions,
+): Promise<string[] | null> {
+  if (opts.scope === "all") return allRuleIds;
+  if (opts.scope === "recommended") {
+    return RECOMMENDED_RULE_IDS.filter((id) => allRuleIds.includes(id));
+  }
+  if (opts.yes || opts.full) return allRuleIds;
+  if (isMachineMode(opts)) return allRuleIds;
+  if (!process.stdin.isTTY) return allRuleIds;
+
+  const { promptScanScope } = await import("./utils/prompt-scope.js");
+  const result = await promptScanScope();
+  if (!result) {
+    process.stderr.write(`${pc.dim("Cancelled.")}\n`);
+    process.exit(130);
+  }
+  return result.enabledRuleIds;
+}
+
+function buildScopeIgnore(
+  enabledRuleIds: string[] | null,
+): { rules: string[] } | undefined {
+  if (!enabledRuleIds) return undefined;
+  const enabled = new Set(enabledRuleIds);
+  const disabled = allRuleIds.filter((id) => !enabled.has(id));
+  return { rules: disabled };
+}
+
 async function runOnce(
   directory: string,
   opts: CliOptions,
+  enabledRuleIds: string[] | null = null,
 ): Promise<DiagnoseResult> {
   const diffOption =
     opts.staged
@@ -314,6 +363,7 @@ async function runOnce(
     ? ora({ text: STAGE_LABELS.detecting, color: "cyan" }).start()
     : null;
   try {
+    const scopeIgnore = buildScopeIgnore(enabledRuleIds);
     const result = await scan(directory, {
       lint: opts.lint,
       deadCode: opts.deadCode,
@@ -321,6 +371,7 @@ async function runOnce(
       project: opts.project,
       configOverrides: {
         respectInlineDisables: opts.respectInlineDisables,
+        ...(scopeIgnore ? { ignore: scopeIgnore } : {}),
       },
       onStage: (stage) => {
         if (spin) spin.text = STAGE_LABELS[stage] ?? "Working…";
@@ -332,6 +383,30 @@ async function runOnce(
     spin?.fail("Scan failed.");
     throw err;
   }
+}
+
+function handleFatalError(err: unknown, opts: CliOptions): void {
+  if (opts.json) {
+    const report = buildJsonErrorReport(err);
+    process.stdout.write(JSON.stringify(report, null, opts.jsonCompact ? 0 : 2));
+    process.stdout.write("\n");
+  } else {
+    const chain = formatErrorChain(err);
+    const hint =
+      err instanceof SvelteDoctorError && err.hint
+        ? err.hint
+        : extractMissingPluginHint(err);
+    process.stderr.write(`${pc.red("✗ svelte-doctor failed")}\n`);
+    for (let i = 0; i < chain.length; i++) {
+      const indent = "  ".repeat(i + 1);
+      const prefix = i === 0 ? "" : pc.dim("↳ ");
+      process.stderr.write(`${indent}${prefix}${chain[i]}\n`);
+    }
+    if (hint) {
+      process.stderr.write(`\n${pc.yellow("hint:")} ${hint}\n`);
+    }
+  }
+  process.exitCode = 1;
 }
 
 function renderResult(result: DiagnoseResult, opts: CliOptions): string {
@@ -389,20 +464,42 @@ export async function run(argv: readonly string[]): Promise<void> {
       "select workspace project (comma-separated for multiple)",
     )
     .option("--watch", "re-scan whenever a tracked file changes", false)
+    .option(
+      "--scope <choice>",
+      "skip the interactive prompt: recommended | all (use --watch / --json / -y to suppress prompt entirely)",
+    )
     .action(
       async (directory: string, opts: CliOptions): Promise<void> => {
-        if (opts.watch) {
-          const { runWatch } = await import("./watch.js");
-          await runWatch(directory, opts, runOnce, renderResult);
-          return;
-        }
+        try {
+          if (opts.scope && opts.scope !== "all" && opts.scope !== "recommended") {
+            throw new SvelteDoctorError(
+              `--scope must be "recommended" or "all" (got "${opts.scope}")`,
+              { hint: "Custom rule selection is only available via the interactive prompt." },
+            );
+          }
 
-        const result = await runOnce(directory, opts);
-        const out = renderResult(result, opts);
-        if (out) process.stdout.write(`${out}\n`);
+          const enabledRuleIds = await pickEnabledRuleIds(opts);
 
-        if (shouldExitFailing(result.diagnostics, opts.failOn)) {
-          process.exitCode = 1;
+          if (opts.watch) {
+            const { runWatch } = await import("./watch.js");
+            await runWatch(
+              directory,
+              opts,
+              (dir, o) => runOnce(dir, o, enabledRuleIds),
+              renderResult,
+            );
+            return;
+          }
+
+          const result = await runOnce(directory, opts, enabledRuleIds);
+          const out = renderResult(result, opts);
+          if (out) process.stdout.write(`${out}\n`);
+
+          if (shouldExitFailing(result.diagnostics, opts.failOn)) {
+            process.exitCode = 1;
+          }
+        } catch (err) {
+          handleFatalError(err, opts);
         }
       },
     );

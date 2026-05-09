@@ -94,4 +94,6 @@ export interface JsonReportError {
   ok: false;
   version: string;
   error: string;
+  errorChain?: string[];
+  hint?: string;
 }

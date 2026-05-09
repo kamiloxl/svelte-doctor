@@ -47,13 +47,13 @@ Diagnoses Svelte 5 codebases. Outputs a 0–100 health score plus actionable dia
 
 ## After making Svelte/SvelteKit changes
 
-Run \`npx -y svelte-doctor@latest . --diff\` and confirm the score did not regress.
+Run \`npx -y svelte-doctor-cli@latest . --diff\` and confirm the score did not regress.
 
 If the score dropped, fix the regressions before committing.
 
 ## For broader cleanup
 
-Run \`npx -y svelte-doctor@latest . --verbose\` (no \`--diff\`) for the full codebase. Fix errors first, then warnings.
+Run \`npx -y svelte-doctor-cli@latest . --verbose\` (no \`--diff\`) for the full codebase. Fix errors first, then warnings.
 
 ## Reference
 
