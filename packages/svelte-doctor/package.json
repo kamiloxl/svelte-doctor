@@ -1,5 +1,5 @@
 {
-  "name": "svelte-doctor-cli",
+  "name": "svelte-doctor-cli-cli",
   "version": "0.1.0",
   "description": "Diagnose Svelte codebases for state, effects, performance, security, accessibility, architecture, and dead-code issues",
   "keywords": [
@@ -20,7 +20,7 @@
   "type": "module",
   "sideEffects": false,
   "bin": {
-    "svelte-doctor": "./bin/svelte-doctor.js"
+    "svelte-doctor-cli": "./bin/svelte-doctor-cli.js"
   },
   "exports": {
     ".": {

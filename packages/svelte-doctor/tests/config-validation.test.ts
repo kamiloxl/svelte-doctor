@@ -52,7 +52,7 @@ describe("validateConfig", () => {
       validateConfig({ lint: "yes" }, "test.json");
     } catch (e) {
       expect(e).toBeInstanceOf(SvelteDoctorError);
-      expect((e as SvelteDoctorError).hint).toMatch(/Check svelte-doctor.config.json/);
+      expect((e as SvelteDoctorError).hint).toMatch(/Check svelte-doctor-cli.config.json/);
     }
   });
 });

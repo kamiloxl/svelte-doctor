@@ -23,7 +23,7 @@ export function registerRuleMeta(meta: RuleMetaInput): RuleMeta {
 }
 
 export function getRuleMeta(id: string): RuleMeta | undefined {
-  const bare = id.replace(/^svelte-doctor\//, "");
+  const bare = id.replace(/^svelte-doctor-cli\//, "");
   return REGISTRY.get(bare);
 }
 

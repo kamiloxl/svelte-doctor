@@ -1,4 +1,4 @@
-# svelte-doctor
+# svelte-doctor-cli
 
 ```
  ____  __     __ _____ _   _____ _____      ____   ___   ____ _____ ___  ____
@@ -15,7 +15,7 @@ One command scans your codebase and outputs a **0–100 health score** with acti
 ## Install
 
 ```bash
-npx -y svelte-doctor-cli@latest .
+npx -y svelte-doctor-cli-cli@latest .
 ```
 
 You'll get a score (75+ Great, 50–74 Needs work, under 50 Critical) and a list of issues. Rules toggle automatically based on detected framework.
@@ -23,24 +23,24 @@ You'll get a score (75+ Great, 50–74 Needs work, under 50 Critical) and a list
 ## Install for your coding agent
 
 ```bash
-npx -y svelte-doctor-cli@latest install
+npx -y svelte-doctor-cli-cli@latest install
 ```
 
-Detects Claude Code, Cursor, Codex, Windsurf, Copilot or OpenCode and installs a skill that teaches the agent to run `svelte-doctor . --diff` after every edit.
+Detects Claude Code, Cursor, Codex, Windsurf, Copilot or OpenCode and installs a skill that teaches the agent to run `svelte-doctor-cli . --diff` after every edit.
 
 ## Configuration
 
-Drop `svelte-doctor.config.json` in your project root, or add a `"svelteDoctor"` key to `package.json`:
+Drop `svelte-doctor-cli.config.json` in your project root, or add a `"svelteDoctor"` key to `package.json`:
 
 ```json
 {
   "ignore": {
-    "rules": ["svelte-doctor/component-too-large"],
+    "rules": ["svelte-doctor-cli/component-too-large"],
     "files": ["src/generated/**"],
     "overrides": [
       {
         "files": ["src/legacy/**"],
-        "rules": ["svelte-doctor/no-mutation-of-props"]
+        "rules": ["svelte-doctor-cli/no-mutation-of-props"]
       }
     ]
   }
@@ -53,21 +53,21 @@ Honors `.gitignore`, `.gitattributes` (`linguist-vendored` / `linguist-generated
 
 ```svelte
 <script>
-  // svelte-doctor-disable-next-line svelte-doctor/no-fetch-in-effect
+  // svelte-doctor-cli-disable-next-line svelte-doctor-cli/no-fetch-in-effect
   $effect(() => fetch('/api/foo'));
 </script>
 
-<!-- svelte-doctor-disable-next-line svelte-doctor/no-unsafe-html-binding -->
+<!-- svelte-doctor-cli-disable-next-line svelte-doctor-cli/no-unsafe-html-binding -->
 {@html trusted}
 ```
 
-Stacked comments and multi-line opening tags work as expected. If a suppression is misplaced, svelte-doctor prints a hint inline or via `--explain`.
+Stacked comments and multi-line opening tags work as expected. If a suppression is misplaced, svelte-doctor-cli prints a hint inline or via `--explain`.
 
 ## ESLint plugin
 
 ```js
 // eslint.config.js
-import svelteDoctor from "svelte-doctor-cli/eslint-plugin";
+import svelteDoctor from "svelte-doctor-cli-cli/eslint-plugin";
 
 export default [
   svelteDoctor.configs.recommended,
@@ -78,7 +78,7 @@ export default [
 ## CLI
 
 ```
-Usage: svelte-doctor [directory] [options]
+Usage: svelte-doctor-cli [directory] [options]
 
   -v, --version              display the version number
   --no-lint                  skip linting
@@ -102,7 +102,7 @@ Subcommand: `install` — install the skill for AI coding agents.
 ## Node.js API
 
 ```ts
-import { diagnose, toJsonReport } from "svelte-doctor-cli/api";
+import { diagnose, toJsonReport } from "svelte-doctor-cli-cli/api";
 
 const result = await diagnose("./");
 console.log(result.score);       // { score: 82, label: "Great" }

@@ -119,7 +119,7 @@ export function validateConfig(
 
   if (errors.length) {
     throw new SvelteDoctorError(errors.join("\n"), {
-      hint: "Check svelte-doctor.config.json or the svelteDoctor key in package.json against the schema.",
+      hint: "Check svelte-doctor-cli.config.json or the svelteDoctor key in package.json against the schema.",
     });
   }
 

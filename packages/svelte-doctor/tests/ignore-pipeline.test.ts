@@ -7,7 +7,7 @@ import type { Diagnostic } from "../src/types.js";
 
 let root: string;
 
-function makeDiag(relPath: string, ruleId = "svelte-doctor/no-fetch-in-effect"): Diagnostic {
+function makeDiag(relPath: string, ruleId = "svelte-doctor-cli/no-fetch-in-effect"): Diagnostic {
   return {
     ruleId,
     category: "state-effects",
@@ -91,12 +91,12 @@ describe("ignore pipeline — ignore.overrides", () => {
       projectRoot: root,
       ignoreFiles: [],
       ignoreOverrides: [
-        { files: ["src/legacy/**"], rules: ["svelte-doctor/no-fetch-in-effect"] },
+        { files: ["src/legacy/**"], rules: ["svelte-doctor-cli/no-fetch-in-effect"] },
       ],
     });
     expect(pipeline.filter(makeDiag("src/legacy/a.svelte"))).toBe(false);
     expect(
-      pipeline.filter(makeDiag("src/legacy/a.svelte", "svelte-doctor/no-href-javascript")),
+      pipeline.filter(makeDiag("src/legacy/a.svelte", "svelte-doctor-cli/no-href-javascript")),
     ).toBe(true);
     expect(pipeline.filter(makeDiag("src/new/a.svelte"))).toBe(true);
   });
@@ -108,7 +108,7 @@ describe("ignore pipeline — ignore.overrides", () => {
       ignoreOverrides: [{ files: ["src/legacy/**"] }],
     });
     expect(
-      pipeline.filter(makeDiag("src/legacy/a.svelte", "svelte-doctor/anything")),
+      pipeline.filter(makeDiag("src/legacy/a.svelte", "svelte-doctor-cli/anything")),
     ).toBe(false);
   });
 

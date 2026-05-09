@@ -27,7 +27,7 @@ describe("encodeAnnotationProp (key=value pieces)", () => {
 
 describe("encodeAnnotation (full directive)", () => {
   const diag: Diagnostic = {
-    ruleId: "svelte-doctor/x",
+    ruleId: "svelte-doctor-cli/x",
     category: "state-effects",
     severity: "error",
     message: "use event:fetch, see https://x.io\nin load",
@@ -41,7 +41,7 @@ describe("encodeAnnotation (full directive)", () => {
   it("emits a properly escaped GitHub Actions directive", () => {
     const out = encodeAnnotation(diag);
     expect(out).toBe(
-      "::error file=C%3A\\repo\\src\\app.svelte,line=5,col=7,endLine=5,endColumn=12::use event:fetch, see https://x.io%0Ain load (svelte-doctor/x)",
+      "::error file=C%3A\\repo\\src\\app.svelte,line=5,col=7,endLine=5,endColumn=12::use event:fetch, see https://x.io%0Ain load (svelte-doctor-cli/x)",
     );
   });
 });

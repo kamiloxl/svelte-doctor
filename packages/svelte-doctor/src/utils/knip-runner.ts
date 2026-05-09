@@ -93,7 +93,7 @@ export async function runKnip(root: string): Promise<Diagnostic[]> {
       if (!items?.length) continue;
       for (const issue of items) {
         diagnostics.push({
-          ruleId: `svelte-doctor/${info.ruleId}`,
+          ruleId: `svelte-doctor-cli/${info.ruleId}`,
           category: "dead-code",
           severity: "warning",
           message: `${info.label}: ${issue.name}`,

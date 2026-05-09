@@ -7,14 +7,14 @@ import { loadConfig, resolveConfig } from "../src/utils/config-loader.js";
 let cwd: string;
 
 beforeEach(() => {
-  cwd = mkdtempSync(join(tmpdir(), "svelte-doctor-cfg-"));
+  cwd = mkdtempSync(join(tmpdir(), "svelte-doctor-cli-cfg-"));
 });
 afterEach(() => rmSync(cwd, { recursive: true, force: true }));
 
 describe("loadConfig", () => {
-  it("reads svelte-doctor.config.json when present", () => {
+  it("reads svelte-doctor-cli.config.json when present", () => {
     writeFileSync(
-      join(cwd, "svelte-doctor.config.json"),
+      join(cwd, "svelte-doctor-cli.config.json"),
       JSON.stringify({ ignore: { rules: ["foo"] }, lint: false }),
     );
     expect(loadConfig(cwd)).toEqual({ ignore: { rules: ["foo"] }, lint: false });

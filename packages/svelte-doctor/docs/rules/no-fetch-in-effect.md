@@ -1,4 +1,4 @@
-# `svelte-doctor/no-fetch-in-effect`
+# `svelte-doctor-cli/no-fetch-in-effect`
 
 **Category:** state-effects · **Default severity:** error
 

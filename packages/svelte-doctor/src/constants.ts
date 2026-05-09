@@ -53,12 +53,12 @@ export const CATEGORY_LABEL: Record<Category, string> = {
   "dead-code": "Dead code",
 };
 
-export const RULE_PREFIX = "svelte-doctor";
-export const SUPPRESSION_DIRECTIVE = "svelte-doctor-disable-next-line";
-export const CONFIG_FILE_NAME = "svelte-doctor.config.json";
+export const RULE_PREFIX = "svelte-doctor-cli";
+export const SUPPRESSION_DIRECTIVE = "svelte-doctor-cli-disable-next-line";
+export const CONFIG_FILE_NAME = "svelte-doctor-cli.config.json";
 export const PACKAGE_JSON_KEY = "svelteDoctor";
 
 export const SCORE_BAR_WIDTH = 24;
 export const NON_VERBOSE_RULES_PER_CATEGORY = 3;
 export const NON_VERBOSE_FILES_PER_RULE = 3;
-export const DOCS_BASE_URL = "https://github.com/kamiloxl/svelte-doctor/blob/main/packages/svelte-doctor/docs/rules";
+export const DOCS_BASE_URL = "https://github.com/kamiloxl/svelte-doctor-cli/blob/main/packages/svelte-doctor-cli/docs/rules";

@@ -1,5 +1,5 @@
 {
-  "name": "svelte-doctor-monorepo",
+  "name": "svelte-doctor-cli-monorepo",
   "version": "0.0.0",
   "private": true,
   "description": "Diagnose Svelte codebases for state, performance, security, accessibility and dead-code issues",

@@ -1,4 +1,4 @@
-name: "svelte-doctor"
+name: "svelte-doctor-cli"
 description: "Diagnose your Svelte 5 codebase. 0–100 health score."
 branding:
   icon: "activity"
@@ -28,7 +28,7 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Run svelte-doctor
+    - name: Run svelte-doctor-cli
       id: run
       shell: bash
       env:
@@ -41,9 +41,9 @@ runs:
         if [ -n "$DIFF_BASE" ]; then
           ARGS+=("--diff" "$DIFF_BASE")
         fi
-        REPORT_PATH="${RUNNER_TEMP:-/tmp}/svelte-doctor-report.json"
-        npx -y svelte-doctor@latest "${ARGS[@]}" || true
-        npx -y svelte-doctor@latest "$DIRECTORY" --json ${DIFF_BASE:+--diff "$DIFF_BASE"} > "$REPORT_PATH"
+        REPORT_PATH="${RUNNER_TEMP:-/tmp}/svelte-doctor-cli-report.json"
+        npx -y svelte-doctor-cli@latest "${ARGS[@]}" || true
+        npx -y svelte-doctor-cli@latest "$DIRECTORY" --json ${DIFF_BASE:+--diff "$DIFF_BASE"} > "$REPORT_PATH"
         SCORE=$(node -e "const r=require('$REPORT_PATH'); process.stdout.write(String(r?.score?.score ?? ''));")
         echo "score=$SCORE" >> "$GITHUB_OUTPUT"
         echo "report-path=$REPORT_PATH" >> "$GITHUB_OUTPUT"
@@ -62,7 +62,7 @@ runs:
           const label = report?.score?.label;
           const total = report?.summary?.total ?? 0;
           const lines = [];
-          lines.push(`### svelte-doctor`);
+          lines.push(`### svelte-doctor-cli`);
           lines.push('');
           lines.push(`**Score:** ${score ?? 'n/a'} / 100 — ${label ?? 'n/a'}`);
           lines.push(`**Issues:** ${total}`);

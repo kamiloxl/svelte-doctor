@@ -100,13 +100,13 @@ export function preflightSvelteProject(project: ProjectInfo): PreflightResult {
       ok: false,
       reason:
         "This directory does not look like a Svelte project — no `svelte` dependency found in package.json.",
-      hint: "Run svelte-doctor from your Svelte project root, or create a Svelte app first (e.g. `npm create svelte@latest`).",
+      hint: "Run svelte-doctor-cli from your Svelte project root, or create a Svelte app first (e.g. `npm create svelte@latest`).",
     };
   }
   if (project.svelteMajor !== null && project.svelteMajor < 5) {
     return {
       ok: false,
-      reason: `Detected Svelte ${project.svelteVersion} — svelte-doctor targets Svelte 5 (runes).`,
+      reason: `Detected Svelte ${project.svelteVersion} — svelte-doctor-cli targets Svelte 5 (runes).`,
       hint: "Upgrade to Svelte 5 (`pnpm add svelte@^5`) or wait for legacy Svelte 4 support.",
     };
   }

@@ -2,9 +2,9 @@ import { SUPPRESSION_DIRECTIVE, SUPPRESSION_NEAR_MISS_MAX_LINES } from "../const
 import type { Diagnostic } from "../types.js";
 
 const LINE_PATTERNS = [
-  /\/\/\s*svelte-doctor-disable-next-line\s+([^\n]+)/g,
-  /<!--\s*svelte-doctor-disable-next-line\s+([^>]+?)\s*-->/g,
-  /\/\*\s*svelte-doctor-disable-next-line\s+([^*]+?)\s*\*\//g,
+  /\/\/\s*svelte-doctor-cli-disable-next-line\s+([^\n]+)/g,
+  /<!--\s*svelte-doctor-cli-disable-next-line\s+([^>]+?)\s*-->/g,
+  /\/\*\s*svelte-doctor-cli-disable-next-line\s+([^*]+?)\s*\*\//g,
 ];
 
 const COMMENT_LIKE_LINE = /^\s*(?:\/\/|<!--|\/\*)/;
@@ -215,7 +215,7 @@ export function applySuppressionsAndDetectUnused(
     for (const stack of stacks) {
       if (stack.used) continue;
       unusedDisables.push({
-        ruleId: "svelte-doctor/unused-disable-directive",
+        ruleId: "svelte-doctor-cli/unused-disable-directive",
         category: "architecture",
         severity: "warning",
         message: `Unused suppression directive for "${stack.combinedRawList}" — no diagnostic at line ${[...stack.appliesToLines].sort((a, b) => a - b).join(", ")} matches.`,

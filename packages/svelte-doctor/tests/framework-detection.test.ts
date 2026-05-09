@@ -11,7 +11,7 @@ function writeJson(path: string, value: unknown) {
 }
 
 beforeEach(() => {
-  cwd = mkdtempSync(join(tmpdir(), "svelte-doctor-"));
+  cwd = mkdtempSync(join(tmpdir(), "svelte-doctor-cli-"));
 });
 
 afterEach(() => {

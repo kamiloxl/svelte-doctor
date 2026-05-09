@@ -15,8 +15,8 @@ interface AgentTarget {
 }
 
 const AGENT_TARGETS: AgentTarget[] = [
-  { id: "claude", displayName: "Claude Code (project)", path: ".claude/skills/svelte-doctor", anchor: "project", binaries: ["claude"] },
-  { id: "claude-user", displayName: "Claude Code (user)", path: ".claude/skills/svelte-doctor", anchor: "home", binaries: ["claude"] },
+  { id: "claude", displayName: "Claude Code (project)", path: ".claude/skills/svelte-doctor-cli", anchor: "project", binaries: ["claude"] },
+  { id: "claude-user", displayName: "Claude Code (user)", path: ".claude/skills/svelte-doctor-cli", anchor: "home", binaries: ["claude"] },
   { id: "cursor", displayName: "Cursor (rules)", path: ".cursor/rules", anchor: "project", binaries: ["cursor"] },
   { id: "codex", displayName: "Codex (AGENTS.md)", path: "AGENTS.md", anchor: "project", binaries: ["codex"] },
   { id: "windsurf", displayName: "Windsurf (rules)", path: ".windsurf/rules", anchor: "project", binaries: ["windsurf"] },
@@ -36,24 +36,24 @@ function isOnPath(binaryName: string): boolean {
 }
 
 const SKILL_BODY = `---
-name: svelte-doctor
+name: svelte-doctor-cli
 description: Use after editing Svelte/SvelteKit code, before committing, or when cleaning up a codebase. Surfaces state/effect bugs, security issues, performance traps, and dead code with a 0–100 health score.
 version: "1.0.0"
 ---
 
-# svelte-doctor
+# svelte-doctor-cli
 
 Diagnoses Svelte 5 codebases. Outputs a 0–100 health score plus actionable diagnostics across state-effects, performance, security, accessibility, architecture, and dead code.
 
 ## After making Svelte/SvelteKit changes
 
-Run \`npx -y svelte-doctor-cli@latest . --diff\` and confirm the score did not regress.
+Run \`npx -y svelte-doctor-cli-cli@latest . --diff\` and confirm the score did not regress.
 
 If the score dropped, fix the regressions before committing.
 
 ## For broader cleanup
 
-Run \`npx -y svelte-doctor-cli@latest . --verbose\` (no \`--diff\`) for the full codebase. Fix errors first, then warnings.
+Run \`npx -y svelte-doctor-cli-cli@latest . --verbose\` (no \`--diff\`) for the full codebase. Fix errors first, then warnings.
 
 ## Reference
 
@@ -80,11 +80,11 @@ Run \`npx -y svelte-doctor-cli@latest . --verbose\` (no \`--diff\`) for the full
 
 \`\`\`svelte
 <script>
-  // svelte-doctor-disable-next-line svelte-doctor/no-fetch-in-effect
+  // svelte-doctor-cli-disable-next-line svelte-doctor-cli/no-fetch-in-effect
   $effect(() => fetch('/api/foo'));
 </script>
 
-<!-- svelte-doctor-disable-next-line svelte-doctor/no-unsafe-html-binding -->
+<!-- svelte-doctor-cli-disable-next-line svelte-doctor-cli/no-unsafe-html-binding -->
 {@html trusted}
 \`\`\`
 `;
@@ -151,7 +151,7 @@ export async function runInstallSkill(options: InstallOptions = {}): Promise<voi
   }
 
   if (options.dryRun) {
-    process.stdout.write(`Would install svelte-doctor skill for:\n`);
+    process.stdout.write(`Would install svelte-doctor-cli skill for:\n`);
     for (const t of detected) {
       process.stdout.write(
         `  - ${t.displayName} → ${homePath(t)}/${t.path}\n`,
@@ -165,7 +165,7 @@ export async function runInstallSkill(options: InstallOptions = {}): Promise<voi
     written.push(writeSkill(t, projectRoot));
   }
   process.stdout.write(
-    `${pc.green("✓")} Installed svelte-doctor skill in ${written.length} location${written.length === 1 ? "" : "s"}:\n`,
+    `${pc.green("✓")} Installed svelte-doctor-cli skill in ${written.length} location${written.length === 1 ? "" : "s"}:\n`,
   );
   for (const path of written) {
     process.stdout.write(`  ${pc.dim(path)}\n`);

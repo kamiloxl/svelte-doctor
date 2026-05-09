@@ -83,7 +83,7 @@ function buildLines(
 
   const meta: string[] = [];
   meta.push(
-    `${pc.bold("svelte-doctor")} ${pc.dim(`v${VERSION}`)}`,
+    `${pc.bold("svelte-doctor-cli")} ${pc.dim(`v${VERSION}`)}`,
   );
   meta.push(
     `${project.framework} · svelte ${project.svelteVersion ?? "?"}${

@@ -396,7 +396,7 @@ function handleFatalError(err: unknown, opts: CliOptions): void {
       err instanceof SvelteDoctorError && err.hint
         ? err.hint
         : extractMissingPluginHint(err);
-    process.stderr.write(`${pc.red("✗ svelte-doctor failed")}\n`);
+    process.stderr.write(`${pc.red("✗ svelte-doctor-cli failed")}\n`);
     for (let i = 0; i < chain.length; i++) {
       const indent = "  ".repeat(i + 1);
       const prefix = i === 0 ? "" : pc.dim("↳ ");
@@ -423,7 +423,7 @@ function renderResult(result: DiagnoseResult, opts: CliOptions): string {
 export async function run(argv: readonly string[]): Promise<void> {
   const program = new Command();
   program
-    .name("svelte-doctor")
+    .name("svelte-doctor-cli")
     .description("Diagnose Svelte 5 codebases. 0–100 health score.")
     .version(VERSION, "-v, --version")
     .argument("[directory]", "project root", ".")
@@ -452,12 +452,12 @@ export async function run(argv: readonly string[]): Promise<void> {
     .option("--why <file:line>", "alias for --explain")
     .option(
       "--respect-inline-disables",
-      "respect inline svelte-doctor-disable* comments (default)",
+      "respect inline svelte-doctor-cli-disable* comments (default)",
       true,
     )
     .option(
       "--no-respect-inline-disables",
-      "ignore inline svelte-doctor-disable* comments",
+      "ignore inline svelte-doctor-cli-disable* comments",
     )
     .option(
       "--project <name>",
@@ -507,7 +507,7 @@ export async function run(argv: readonly string[]): Promise<void> {
   program
     .command("install")
     .description(
-      "Install the svelte-doctor skill for AI coding agents (Claude Code, Cursor, Codex).",
+      "Install the svelte-doctor-cli skill for AI coding agents (Claude Code, Cursor, Codex).",
     )
     .option("-y, --yes", "skip prompts", false)
     .option("--dry-run", "preview which agents would be installed", false)
