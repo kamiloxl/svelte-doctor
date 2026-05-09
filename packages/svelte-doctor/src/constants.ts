@@ -61,4 +61,4 @@ export const PACKAGE_JSON_KEY = "svelteDoctor";
 export const SCORE_BAR_WIDTH = 24;
 export const NON_VERBOSE_RULES_PER_CATEGORY = 3;
 export const NON_VERBOSE_FILES_PER_RULE = 3;
-export const DOCS_BASE_URL = "https://github.com/amicable/svelte-doctor/blob/main/packages/svelte-doctor/docs/rules";
+export const DOCS_BASE_URL = "https://github.com/kamiloxl/svelte-doctor/blob/main/packages/svelte-doctor/docs/rules";

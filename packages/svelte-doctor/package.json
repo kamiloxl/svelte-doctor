@@ -16,7 +16,7 @@
     "knip"
   ],
   "license": "MIT",
-  "author": "amicable",
+  "author": "kamiloxl",
   "type": "module",
   "sideEffects": false,
   "bin": {
