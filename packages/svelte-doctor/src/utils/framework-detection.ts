@@ -1,6 +1,15 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
-import type { Framework, ProjectInfo } from "../types.js";
+import type { Framework, ProjectInfo, SvelteMajor, SvelteVersionSource } from "../types.js";
+
+export interface DetectProjectOptions {
+  svelteMajorOverride?: SvelteMajor;
+}
+
+interface ResolvedSvelteMajor {
+  major: SvelteMajor;
+  source: SvelteVersionSource;
+}
 
 interface PackageJsonShape {
   dependencies?: Record<string, string>;
@@ -71,18 +80,57 @@ function hasTypeScript(root: string, pkg: PackageJsonShape | null): boolean {
   return Boolean(pickVersion(pkg, "typescript"));
 }
 
-export function detectProject(rootInput: string): ProjectInfo {
+function readNodeModulesSvelteMajor(root: string): number | null {
+  const path = join(root, "node_modules", "svelte", "package.json");
+  if (!existsSync(path)) return null;
+  try {
+    const pkg = JSON.parse(readFileSync(path, "utf8")) as { version?: string };
+    return parseMajor(pkg.version ?? null);
+  } catch {
+    return null;
+  }
+}
+
+function resolveSvelteMajor(
+  root: string,
+  pkg: PackageJsonShape | null,
+  override?: SvelteMajor,
+): ResolvedSvelteMajor {
+  if (override === 4 || override === 5) {
+    return { major: override, source: "override" };
+  }
+  const fromPkg = parseMajor(pickVersion(pkg, "svelte"));
+  if (fromPkg === 4 || fromPkg === 5) {
+    return { major: fromPkg, source: "package.json" };
+  }
+  const fromNm = readNodeModulesSvelteMajor(root);
+  if (fromNm === 4 || fromNm === 5) {
+    return { major: fromNm, source: "node_modules" };
+  }
+  return { major: 5, source: "assumed" };
+}
+
+export function detectProject(
+  rootInput: string,
+  options: DetectProjectOptions = {},
+): ProjectInfo {
   const root = resolve(rootInput);
   if (!existsSync(root) || !statSync(root).isDirectory()) {
     throw new Error(`Project root does not exist or is not a directory: ${root}`);
   }
   const pkg = readPackageJson(root);
   const svelteVersion = pickVersion(pkg, "svelte");
+  const { major, source } = resolveSvelteMajor(
+    root,
+    pkg,
+    options.svelteMajorOverride,
+  );
   return {
     root,
     framework: detectFramework(root, pkg),
     svelteVersion,
-    svelteMajor: parseMajor(svelteVersion),
+    svelteMajor: major,
+    svelteVersionSource: source,
     hasTypeScript: hasTypeScript(root, pkg),
     packageManager: detectPackageManager(root, pkg),
   };
@@ -95,7 +143,8 @@ export interface PreflightResult {
 }
 
 export function preflightSvelteProject(project: ProjectInfo): PreflightResult {
-  if (!project.svelteVersion && project.framework === "unknown") {
+  const noSvelte = !project.svelteVersion && project.framework === "unknown";
+  if (noSvelte) {
     return {
       ok: false,
       reason:
@@ -103,11 +152,19 @@ export function preflightSvelteProject(project: ProjectInfo): PreflightResult {
       hint: "Run svelte-doctor-cli from your Svelte project root, or create a Svelte app first (e.g. `npm create svelte@latest`).",
     };
   }
-  if (project.svelteMajor !== null && project.svelteMajor < 5) {
+  const parsed = parseMajor(project.svelteVersion);
+  if (parsed !== null && parsed < 4) {
     return {
       ok: false,
-      reason: `Detected Svelte ${project.svelteVersion} — svelte-doctor-cli targets Svelte 5 (runes).`,
-      hint: "Upgrade to Svelte 5 (`pnpm add svelte@^5`) or wait for legacy Svelte 4 support.",
+      reason: `Detected Svelte ${project.svelteVersion} — svelte-doctor supports Svelte 4 and 5.`,
+      hint: "Upgrade to Svelte 4 or 5.",
+    };
+  }
+  if (parsed !== null && parsed > 5) {
+    return {
+      ok: false,
+      reason: `Detected Svelte ${project.svelteVersion} — newer than supported (4, 5).`,
+      hint: "Update svelte-doctor: pnpm add -D svelte-doctor-cli@latest.",
     };
   }
   return { ok: true };
