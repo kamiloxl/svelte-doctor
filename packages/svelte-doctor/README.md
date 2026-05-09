@@ -143,3 +143,5 @@ Penalty is per **unique rule**, not per diagnostic.
 ## License
 
 MIT.
+
+Have fun :)
