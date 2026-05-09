@@ -1,11 +1,12 @@
 {
   "name": "svelte-doctor-cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Diagnose Svelte codebases for state, effects, performance, security, accessibility, architecture, and dead-code issues",
   "keywords": [
     "svelte",
     "sveltekit",
     "svelte5",
+    "svelte4",
     "runes",
     "linter",
     "diagnostics",
@@ -61,7 +62,7 @@
     "svelte-eslint-parser": "^1.0.0"
   },
   "peerDependencies": {
-    "svelte": "^5.0.0"
+    "svelte": "^4.0.0 || ^5.0.0"
   },
   "peerDependenciesMeta": {
     "svelte": {
