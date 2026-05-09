@@ -1,0 +1,86 @@
+name: "svelte-doctor"
+description: "Diagnose your Svelte 5 codebase. 0–100 health score."
+branding:
+  icon: "activity"
+  color: "orange"
+
+inputs:
+  directory:
+    description: "Project root to scan."
+    required: false
+    default: "."
+  diff:
+    description: "Base branch to diff against (e.g. main). When set, only changed files are scanned."
+    required: false
+  fail-on:
+    description: "Fail the action when diagnostics of this severity or worse are found: error | warning | none."
+    required: false
+    default: "none"
+  github-token:
+    description: "GitHub token. When provided on pull_request events, diagnostics are posted as a PR comment."
+    required: false
+
+outputs:
+  score:
+    description: "Health score 0–100 (or empty when score could not be computed)."
+    value: ${{ steps.run.outputs.score }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Run svelte-doctor
+      id: run
+      shell: bash
+      env:
+        DIRECTORY: ${{ inputs.directory }}
+        DIFF_BASE: ${{ inputs.diff }}
+        FAIL_ON: ${{ inputs.fail-on }}
+      run: |
+        set -e
+        ARGS=("$DIRECTORY" "--annotations" "--fail-on" "$FAIL_ON")
+        if [ -n "$DIFF_BASE" ]; then
+          ARGS+=("--diff" "$DIFF_BASE")
+        fi
+        REPORT_PATH="${RUNNER_TEMP:-/tmp}/svelte-doctor-report.json"
+        npx -y svelte-doctor@latest "${ARGS[@]}" || true
+        npx -y svelte-doctor@latest "$DIRECTORY" --json ${DIFF_BASE:+--diff "$DIFF_BASE"} > "$REPORT_PATH"
+        SCORE=$(node -e "const r=require('$REPORT_PATH'); process.stdout.write(String(r?.score?.score ?? ''));")
+        echo "score=$SCORE" >> "$GITHUB_OUTPUT"
+        echo "report-path=$REPORT_PATH" >> "$GITHUB_OUTPUT"
+
+    - name: Comment on PR
+      if: ${{ inputs.github-token != '' && github.event_name == 'pull_request' }}
+      uses: actions/github-script@v7
+      env:
+        REPORT_PATH: ${{ steps.run.outputs.report-path }}
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const fs = require('fs');
+          const report = JSON.parse(fs.readFileSync(process.env.REPORT_PATH, 'utf8'));
+          const score = report?.score?.score;
+          const label = report?.score?.label;
+          const total = report?.summary?.total ?? 0;
+          const lines = [];
+          lines.push(`### svelte-doctor`);
+          lines.push('');
+          lines.push(`**Score:** ${score ?? 'n/a'} / 100 — ${label ?? 'n/a'}`);
+          lines.push(`**Issues:** ${total}`);
+          if (total > 0) {
+            lines.push('');
+            lines.push('| File | Line | Severity | Rule | Message |');
+            lines.push('| --- | ---: | --- | --- | --- |');
+            for (const d of report.diagnostics.slice(0, 30)) {
+              lines.push(`| \`${d.file}\` | ${d.line} | ${d.severity} | \`${d.ruleId}\` | ${d.message.replace(/\|/g, '\\|')} |`);
+            }
+            if (report.diagnostics.length > 30) {
+              lines.push('');
+              lines.push(`…and ${report.diagnostics.length - 30} more.`);
+            }
+          }
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            body: lines.join('\n'),
+          });

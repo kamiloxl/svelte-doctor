@@ -1,0 +1,80 @@
+{
+  "name": "svelte-doctor",
+  "version": "0.0.1",
+  "description": "Diagnose Svelte codebases for state, effects, performance, security, accessibility, architecture, and dead-code issues",
+  "keywords": [
+    "svelte",
+    "sveltekit",
+    "svelte5",
+    "runes",
+    "linter",
+    "diagnostics",
+    "performance",
+    "accessibility",
+    "security",
+    "architecture",
+    "knip"
+  ],
+  "license": "MIT",
+  "author": "amicable",
+  "type": "module",
+  "sideEffects": false,
+  "bin": {
+    "svelte-doctor": "./bin/svelte-doctor.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/cli.d.ts",
+      "default": "./dist/cli.js"
+    },
+    "./api": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./eslint-plugin": {
+      "types": "./dist/eslint-plugin.d.ts",
+      "default": "./dist/eslint-plugin.js"
+    }
+  },
+  "files": [
+    "bin/**",
+    "dist/**/*.js",
+    "dist/**/*.d.ts"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "dev": "tsc -p tsconfig.build.json --watch"
+  },
+  "dependencies": {
+    "@typescript-eslint/parser": "^8.18.0",
+    "commander": "^14.0.0",
+    "eslint": "^9.17.0",
+    "eslint-plugin-svelte": "^3.0.0",
+    "knip": "^6.0.0",
+    "minimatch": "^10.0.0",
+    "ora": "^9.0.0",
+    "picocolors": "^1.1.1",
+    "prompts": "^2.4.2",
+    "svelte-eslint-parser": "^1.0.0"
+  },
+  "peerDependencies": {
+    "svelte": "^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "svelte": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/estree": "^1.0.6",
+    "@types/node": "^22.10.0",
+    "@types/prompts": "^2.4.9",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
