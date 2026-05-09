@@ -65,6 +65,19 @@ function renderScoreBar(score: Score, tint: (s: string) => string): string {
   return `${tint(bar)} ${pc.bold(String(score.score))}/100  ${paintLabel(score.label)}`;
 }
 
+function formatSvelteVersion(project: ProjectInfo): string {
+  const base = `svelte ${project.svelteMajor}`;
+  const runes = project.svelteMajor === 5 ? " (runes)" : "";
+  if (project.svelteVersionSource === "override") return `${base}${runes} (forced)`;
+  if (project.svelteVersionSource === "node_modules") {
+    return `${base}${runes} (resolved from node_modules)`;
+  }
+  if (project.svelteVersionSource === "assumed") {
+    return `${base}${runes} (assumed)`;
+  }
+  return `${base}${runes}`;
+}
+
 function buildLines(
   project: ProjectInfo,
   score: Score | null,
@@ -86,7 +99,7 @@ function buildLines(
     `${pc.bold("svelte-doctor-cli")} ${pc.dim(`v${VERSION}`)}`,
   );
   meta.push(
-    `${project.framework} · svelte ${project.svelteVersion ?? "?"}${
+    `${project.framework} · ${formatSvelteVersion(project)}${
       project.hasTypeScript ? pc.dim(" · ts") : ""
     }`,
   );
