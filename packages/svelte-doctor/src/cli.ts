@@ -51,6 +51,7 @@ interface CliOptions {
   watch: boolean;
   respectInlineDisables: boolean;
   scope?: "recommended" | "all" | "custom";
+  svelteVersion?: string;
 }
 
 function paintLabel(label: ScoreLabel): string {
@@ -350,6 +351,7 @@ async function runOnce(
   directory: string,
   opts: CliOptions,
   enabledRuleIds: string[] | null = null,
+  svelteMajorOverride: 4 | 5 | undefined = undefined,
 ): Promise<DiagnoseResult> {
   const diffOption =
     opts.staged
@@ -369,6 +371,7 @@ async function runOnce(
       deadCode: opts.deadCode,
       diff: diffOption,
       project: opts.project,
+      svelteMajorOverride,
       configOverrides: {
         respectInlineDisables: opts.respectInlineDisables,
         ...(scopeIgnore ? { ignore: scopeIgnore } : {}),
@@ -468,6 +471,10 @@ export async function run(argv: readonly string[]): Promise<void> {
       "--scope <choice>",
       "skip the interactive prompt: recommended | all (use --watch / --json / -y to suppress prompt entirely)",
     )
+    .option(
+      "--svelte-version <version>",
+      "override detected Svelte major version: 4 or 5",
+    )
     .action(
       async (directory: string, opts: CliOptions): Promise<void> => {
         try {
@@ -478,6 +485,17 @@ export async function run(argv: readonly string[]): Promise<void> {
             );
           }
 
+          let svelteMajorOverride: 4 | 5 | undefined;
+          if (opts.svelteVersion !== undefined) {
+            if (opts.svelteVersion !== "4" && opts.svelteVersion !== "5") {
+              throw new SvelteDoctorError(
+                `--svelte-version must be 4 or 5 (got "${opts.svelteVersion}")`,
+                { hint: "Use --svelte-version 4 or --svelte-version 5." },
+              );
+            }
+            svelteMajorOverride = opts.svelteVersion === "4" ? 4 : 5;
+          }
+
           const enabledRuleIds = await pickEnabledRuleIds(opts);
 
           if (opts.watch) {
@@ -485,13 +503,13 @@ export async function run(argv: readonly string[]): Promise<void> {
             await runWatch(
               directory,
               opts,
-              (dir, o) => runOnce(dir, o, enabledRuleIds),
+              (dir, o) => runOnce(dir, o, enabledRuleIds, svelteMajorOverride),
               renderResult,
             );
             return;
           }
 
-          const result = await runOnce(directory, opts, enabledRuleIds);
+          const result = await runOnce(directory, opts, enabledRuleIds, svelteMajorOverride);
           const out = renderResult(result, opts);
           if (out) process.stdout.write(`${out}\n`);
 
