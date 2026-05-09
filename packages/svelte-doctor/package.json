@@ -1,5 +1,5 @@
 {
-  "name": "svelte-doctor-cli-cli",
+  "name": "svelte-doctor-cli",
   "version": "0.1.0",
   "description": "Diagnose Svelte codebases for state, effects, performance, security, accessibility, architecture, and dead-code issues",
   "keywords": [
@@ -20,7 +20,7 @@
   "type": "module",
   "sideEffects": false,
   "bin": {
-    "svelte-doctor-cli": "./bin/svelte-doctor-cli.js"
+    "svelte-doctor": "./bin/svelte-doctor.js"
   },
   "exports": {
     ".": {
@@ -45,7 +45,8 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "dev": "tsc -p tsconfig.build.json --watch"
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "prepublishOnly": "pnpm typecheck && pnpm build && pnpm test"
   },
   "dependencies": {
     "@typescript-eslint/parser": "^8.18.0",
