@@ -10,11 +10,20 @@ export type Category =
 
 export type Framework = "sveltekit" | "vite-svelte" | "unknown";
 
+export type SvelteMajor = 4 | 5;
+
+export type SvelteVersionSource =
+  | "package.json"
+  | "node_modules"
+  | "override"
+  | "assumed";
+
 export interface ProjectInfo {
   root: string;
   framework: Framework;
   svelteVersion: string | null;
-  svelteMajor: number | null;
+  svelteMajor: SvelteMajor;
+  svelteVersionSource: SvelteVersionSource;
   hasTypeScript: boolean;
   packageManager: "pnpm" | "npm" | "yarn" | "bun" | "unknown";
 }
