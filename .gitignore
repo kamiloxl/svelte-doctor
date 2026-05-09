@@ -2,6 +2,7 @@ node_modules
 dist
 .turbo
 .DS_Store
+.cursor/hooks/state/continual-learning.json
 *.log
 coverage
 .env
