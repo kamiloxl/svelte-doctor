@@ -69,6 +69,7 @@ export interface SvelteDoctorConfig {
   };
   lint?: boolean;
   deadCode?: boolean;
+  audit?: boolean;
   verbose?: boolean;
   failOn?: "error" | "warning" | "none";
   respectInlineDisables?: boolean;

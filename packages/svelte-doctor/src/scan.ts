@@ -22,6 +22,7 @@ import {
   type GitDiffOptions,
 } from "./utils/git-diff.js";
 import { runKnip } from "./utils/knip-runner.js";
+import { runNpmAudit } from "./utils/audit-runner.js";
 import { createIgnorePipeline } from "./utils/ignore-pipeline.js";
 import { dedupeDiagnostics, sortDiagnostics } from "./utils/sort-diagnostics.js";
 import {
@@ -44,11 +45,14 @@ export type ScanStage =
   | "loading-config"
   | "linting"
   | "dead-code"
+  | "audit"
   | "post-processing";
 
 export interface ScanOptions {
   lint?: boolean;
   deadCode?: boolean;
+  /** Run `npm audit` / `pnpm audit` and surface vulnerable dependencies as security diagnostics. */
+  audit?: boolean;
   diff?: GitDiffOptions;
   configOverrides?: Partial<SvelteDoctorConfig>;
   /** Workspace sub-project name(s), comma-separated. Resolved against project root. */
@@ -69,6 +73,7 @@ const SVELTEKIT_TS_TARGETS = [
   "src/routes/**/*.{ts,js,mts,cts,mjs,cjs}",
   "src/hooks*.{ts,js}",
   "src/hooks/**/*.{ts,js}",
+  "svelte.config.{js,ts,mjs,cjs}",
 ];
 
 function severityFromEslint(level: 0 | 1 | 2): Severity {
@@ -319,6 +324,22 @@ async function scanSingleProject(
     onStage("dead-code");
     const knipDiagnostics = await runKnip(project.root);
     diagnostics.push(...knipDiagnostics);
+  }
+
+  const auditEnabled =
+    options.audit === undefined ? config.audit : options.audit;
+  if (auditEnabled && !diffFiles) {
+    onStage("audit");
+    try {
+      const auditDiagnostics = await runNpmAudit({
+        cwd: project.root,
+        packageManager: project.packageManager,
+        skipIfNoManifest: true,
+      });
+      diagnostics.push(...auditDiagnostics);
+    } catch {
+      // audit is best-effort; never let it crash the scan
+    }
   }
 
   onStage("post-processing");

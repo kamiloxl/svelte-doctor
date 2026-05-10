@@ -1,9 +1,16 @@
 import { Command } from "commander";
 import ora from "ora";
 import pc from "picocolors";
+import { writeFileSync } from "node:fs";
 import { resolve, relative } from "node:path";
 import { encodeAnnotation } from "./utils/annotation-encoding.js";
-import { allRuleIds, RECOMMENDED_RULE_IDS } from "./eslint-plugin.js";
+import { renderSarif } from "./utils/sarif-reporter.js";
+import { renderMarkdownReport } from "./utils/markdown-reporter.js";
+import {
+  allRuleIds,
+  RECOMMENDED_RULE_IDS,
+  SECURITY_RULE_IDS,
+} from "./eslint-plugin.js";
 import { renderAmbulance, renderDoctorBanner } from "./utils/banner.js";
 import {
   buildJsonErrorReport,
@@ -35,10 +42,15 @@ import type {
 interface CliOptions {
   lint: boolean;
   deadCode: boolean;
+  audit: boolean;
   verbose: boolean;
   score: boolean;
   json: boolean;
   jsonCompact: boolean;
+  sarif: boolean;
+  sarifFile?: string;
+  markdown: boolean;
+  markdownFile?: string;
   yes: boolean;
   full: boolean;
   diff?: string | boolean;
@@ -51,7 +63,7 @@ interface CliOptions {
   project?: string;
   watch: boolean;
   respectInlineDisables: boolean;
-  scope?: "recommended" | "all" | "custom";
+  scope?: "recommended" | "all" | "security" | "custom";
   svelteVersion?: string;
 }
 
@@ -309,6 +321,7 @@ const STAGE_LABELS: Record<string, string> = {
   "loading-config": "Loading configuration…",
   linting: "Linting…",
   "dead-code": "Detecting dead code…",
+  audit: "Auditing dependencies…",
   "post-processing": "Computing score…",
 };
 
@@ -317,6 +330,8 @@ function isMachineMode(opts: CliOptions): boolean {
     opts.json ||
       opts.score ||
       opts.annotations ||
+      opts.sarif ||
+      opts.markdown ||
       opts.explain ||
       opts.why ||
       opts.watch,
@@ -375,6 +390,9 @@ async function pickEnabledRuleIds(
   if (opts.scope === "recommended") {
     return RECOMMENDED_RULE_IDS.filter((id) => allRuleIds.includes(id));
   }
+  if (opts.scope === "security") {
+    return SECURITY_RULE_IDS.filter((id) => allRuleIds.includes(id));
+  }
   if (opts.yes || opts.full) return allRuleIds;
   if (isMachineMode(opts)) return allRuleIds;
   if (!process.stdin.isTTY) return allRuleIds;
@@ -410,7 +428,12 @@ async function runOnce(
         ? { base: typeof opts.diff === "string" ? opts.diff : undefined }
         : undefined;
 
-  const useSpinner = !opts.json && !opts.score && !opts.annotations;
+  const useSpinner =
+    !opts.json &&
+    !opts.score &&
+    !opts.annotations &&
+    !opts.sarif &&
+    !opts.markdown;
   const spin = useSpinner
     ? ora({ text: STAGE_LABELS.detecting, color: "cyan" }).start()
     : null;
@@ -419,6 +442,7 @@ async function runOnce(
     const result = await scan(directory, {
       lint: opts.lint,
       deadCode: opts.deadCode,
+      audit: opts.audit,
       diff: diffOption,
       project: opts.project,
       svelteMajorOverride,
@@ -470,6 +494,22 @@ function renderResult(result: DiagnoseResult, opts: CliOptions): string {
   }
   if (opts.score) return String(result.score?.score ?? 0);
   if (opts.annotations) return renderAnnotations(result);
+  if (opts.sarif) {
+    const sarif = renderSarif(result, opts.jsonCompact);
+    if (opts.sarifFile) {
+      writeFileSync(resolve(opts.sarifFile), sarif);
+      return `SARIF written to ${opts.sarifFile}`;
+    }
+    return sarif;
+  }
+  if (opts.markdown) {
+    const md = renderMarkdownReport(result);
+    if (opts.markdownFile) {
+      writeFileSync(resolve(opts.markdownFile), md);
+      return `Markdown report written to ${opts.markdownFile}`;
+    }
+    return md;
+  }
   return renderHuman(result, opts.verbose);
 }
 
@@ -482,10 +522,37 @@ export async function run(argv: readonly string[]): Promise<void> {
     .argument("[directory]", "project root", ".")
     .option("--no-lint", "skip linting")
     .option("--no-dead-code", "skip dead code detection")
+    .option(
+      "--audit",
+      "run npm/pnpm/yarn audit and surface vulnerable dependencies as security diagnostics",
+      false,
+    )
+    .option(
+      "--no-audit",
+      "skip dependency audit (default — opt in with --audit)",
+    )
     .option("--verbose", "show every rule and per-file detail", false)
     .option("--score", "output only the score", false)
     .option("--json", "output a single structured JSON report", false)
-    .option("--json-compact", "with --json, emit compact JSON (no indentation)", false)
+    .option("--json-compact", "with --json/--sarif, emit compact JSON (no indentation)", false)
+    .option(
+      "--sarif",
+      "output SARIF 2.1.0 report (for GitHub Code Scanning)",
+      false,
+    )
+    .option(
+      "--sarif-file <path>",
+      "with --sarif, write the report to a file instead of stdout",
+    )
+    .option(
+      "--markdown",
+      "output a Markdown report (good for PR comments / artifacts)",
+      false,
+    )
+    .option(
+      "--markdown-file <path>",
+      "with --markdown, write the report to a file instead of stdout",
+    )
     .option("-y, --yes", "skip prompts", false)
     .option("--full", "skip prompts, always run a full scan", false)
     .option("--diff [base]", "scan only files changed vs base branch")
@@ -519,7 +586,7 @@ export async function run(argv: readonly string[]): Promise<void> {
     .option("--watch", "re-scan whenever a tracked file changes", false)
     .option(
       "--scope <choice>",
-      "skip the interactive prompt: recommended | all (use --watch / --json / -y to suppress prompt entirely)",
+      "skip the interactive prompt: recommended | all | security (use --watch / --json / -y to suppress prompt entirely)",
     )
     .option(
       "--svelte-version <version>",
@@ -528,9 +595,14 @@ export async function run(argv: readonly string[]): Promise<void> {
     .action(
       async (directory: string, opts: CliOptions): Promise<void> => {
         try {
-          if (opts.scope && opts.scope !== "all" && opts.scope !== "recommended") {
+          if (
+            opts.scope &&
+            opts.scope !== "all" &&
+            opts.scope !== "recommended" &&
+            opts.scope !== "security"
+          ) {
             throw new SvelteDoctorError(
-              `--scope must be "recommended" or "all" (got "${opts.scope}")`,
+              `--scope must be "recommended", "all", or "security" (got "${opts.scope}")`,
               { hint: "Custom rule selection is only available via the interactive prompt." },
             );
           }

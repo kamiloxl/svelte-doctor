@@ -10,7 +10,9 @@
 
 Your agent writes bad Svelte. This catches it.
 
-One command scans your codebase and outputs a **0–100 health score** with actionable diagnostics across state & effects, performance, architecture, security, accessibility, and dead code. Works with **Svelte 4** and **Svelte 5 (runes)** in **SvelteKit** and **Vite + Svelte** projects.
+One command scans your codebase and outputs a **0–100 health score** with actionable diagnostics across state & effects, performance, architecture, **security**, accessibility, and dead code. Works with **Svelte 4** and **Svelte 5 (runes)** in **SvelteKit** and **Vite + Svelte** projects.
+
+Heavy focus on **SvelteKit-specific security**: leaked secrets, broken server/client boundary, weak CSP, CSRF, prerender pitfalls, open redirects, missing form validation. Reports SARIF for GitHub Code Scanning and integrates `npm audit` for known-vulnerable dependencies.
 
 ## Install
 
@@ -72,6 +74,8 @@ import svelteDoctor from "svelte-doctor-cli/eslint-plugin";
 export default [
   svelteDoctor.configs.recommended,
   svelteDoctor.configs.sveltekit,
+  // Optional: security-only preset, layer it on top of an existing config
+  // svelteDoctor.configs.security,
 ];
 ```
 
@@ -83,13 +87,19 @@ Usage: svelte-doctor-cli [directory] [options]
   -v, --version              display the version number
   --no-lint                  skip linting
   --no-dead-code             skip dead code detection
+  --audit                    run npm/pnpm/yarn audit and report vulnerable deps
   --verbose                  show every rule and per-file detail
   --score                    output only the score
   --json                     output a structured JSON report
-  --json-compact             with --json, emit compact JSON
+  --json-compact             with --json/--sarif, emit compact JSON
+  --sarif                    output SARIF 2.1.0 (for GitHub Code Scanning)
+  --sarif-file <path>        write SARIF to file instead of stdout
+  --markdown                 output a Markdown report (great for PR comments)
+  --markdown-file <path>     write Markdown to file instead of stdout
   --diff [base]              scan only files changed vs base branch
   --staged                   scan only staged files (pre-commit hooks)
   --project <name>           select workspace project (comma-separated)
+  --scope <choice>           recommended | all | security
   --fail-on <level>          exit with error: error, warning, none (default: error)
   --annotations              output as GitHub Actions annotations
   --explain <file:line>      diagnose why a rule fired
@@ -97,6 +107,20 @@ Usage: svelte-doctor-cli [directory] [options]
   --watch                    re-scan whenever a tracked file changes
   --svelte-version <4|5>     override detected Svelte major version
 ```
+
+### Security-only run
+
+```bash
+npx -y svelte-doctor-cli@latest . --scope security --audit --fail-on error
+```
+
+### SARIF for GitHub Code Scanning
+
+```bash
+npx -y svelte-doctor-cli@latest . --sarif --sarif-file svelte-doctor.sarif --yes
+```
+
+The bundled GitHub Action will upload this automatically when invoked with `sarif: true`.
 
 Subcommand: `install` — install the skill for AI coding agents.
 
@@ -130,9 +154,21 @@ const report = toJsonReport(result);
 | `no-array-index-as-each-key`              | performance    | warn    | 4 & 5    |
 | `no-unsafe-html-binding`                  | security       | error   | 4 & 5    |
 | `no-href-javascript`                      | security       | error   | 4 & 5    |
+| `no-eval`                                 | security       | error   | 4 & 5    |
+| `no-secrets-in-client`                    | security       | error   | 4 & 5    |
+| `no-unsafe-target-blank`                  | security       | error   | 4 & 5    |
+| `no-localStorage-of-secrets`              | security       | warn    | 4 & 5    |
 | `component-too-large`                     | architecture   | warn    | 4 & 5    |
 | `server-only-import-in-client` (SvelteKit) | security      | error   | 4 & 5    |
+| `no-private-env-leak` (SvelteKit)         | security       | error   | 4 & 5    |
+| `csrf-disabled-check` (SvelteKit)         | security       | error   | 4 & 5    |
+| `form-action-without-validation` (SvelteKit) | security    | warn    | 4 & 5    |
+| `prerender-with-user-data` (SvelteKit)    | security       | error   | 4 & 5    |
+| `cookies-without-httponly` (SvelteKit)    | security       | warn    | 4 & 5    |
+| `no-redirect-from-untrusted-input` (SvelteKit) | security  | error   | 4 & 5    |
+| `weak-csp` (SvelteKit)                    | security       | warn    | 4 & 5    |
 | `no-fetch-in-load-without-event` (SvelteKit) | performance | error   | 4 & 5    |
+| `dependency-vulnerability` (npm/pnpm audit) | security     | warn    | 4 & 5    |
 | `unused-disable-directive`                | meta           | warn    | 4 & 5    |
 
 Full rule docs: [`docs/rules/`](./docs/rules/).

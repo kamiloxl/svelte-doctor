@@ -52,6 +52,10 @@ export function validateConfig(
     if (typeof raw.deadCode !== "boolean") errors.push(`${source}: "deadCode" must be a boolean`);
     else out.deadCode = raw.deadCode;
   }
+  if (raw.audit !== undefined) {
+    if (typeof raw.audit !== "boolean") errors.push(`${source}: "audit" must be a boolean`);
+    else out.audit = raw.audit;
+  }
   if (raw.verbose !== undefined) {
     if (typeof raw.verbose !== "boolean") errors.push(`${source}: "verbose" must be a boolean`);
     else out.verbose = raw.verbose;
@@ -152,6 +156,7 @@ export function resolveConfig(
   return {
     lint: merged.lint ?? true,
     deadCode: merged.deadCode ?? true,
+    audit: merged.audit ?? false,
     verbose: merged.verbose ?? false,
     failOn: merged.failOn ?? "none",
     respectInlineDisables: merged.respectInlineDisables ?? true,

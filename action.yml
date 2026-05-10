@@ -26,11 +26,30 @@ inputs:
     description: "Node.js version to use."
     required: false
     default: "22"
+  audit:
+    description: "Run npm/pnpm audit and report vulnerable dependencies as security diagnostics."
+    required: false
+    default: "false"
+  scope:
+    description: "Rule scope: recommended | all | security."
+    required: false
+    default: "all"
+  sarif:
+    description: "Emit a SARIF 2.1.0 report and (when 'true') upload it to GitHub Code Scanning."
+    required: false
+    default: "false"
+  upload-sarif:
+    description: "When sarif=true, also upload the report via github/codeql-action/upload-sarif. Requires `security-events: write`."
+    required: false
+    default: "true"
 
 outputs:
   score:
     description: "Health score 0–100 (or empty when score could not be computed)."
     value: ${{ steps.score.outputs.score }}
+  sarif-path:
+    description: "Path to the generated SARIF file (only set when sarif=true)."
+    value: ${{ steps.run.outputs.sarif-path }}
 
 runs:
   using: "composite"
@@ -47,8 +66,13 @@ runs:
         DIFF_BASE: ${{ inputs.diff }}
         FAIL_ON: ${{ inputs.fail-on }}
         PROJECT: ${{ inputs.project }}
+        AUDIT: ${{ inputs.audit }}
+        SCOPE: ${{ inputs.scope }}
+        SARIF: ${{ inputs.sarif }}
       run: |
         set -e
+        REPORT_PATH="${RUNNER_TEMP:-/tmp}/svelte-doctor-cli-report.json"
+        SARIF_PATH="${RUNNER_TEMP:-/tmp}/svelte-doctor-cli.sarif"
         ARGS=("$DIRECTORY" "--annotations" "--fail-on" "$FAIL_ON" "--yes")
         if [ -n "$DIFF_BASE" ]; then
           ARGS+=("--diff" "$DIFF_BASE")
@@ -56,7 +80,12 @@ runs:
         if [ -n "$PROJECT" ]; then
           ARGS+=("--project" "$PROJECT")
         fi
-        REPORT_PATH="${RUNNER_TEMP:-/tmp}/svelte-doctor-cli-report.json"
+        if [ -n "$SCOPE" ]; then
+          ARGS+=("--scope" "$SCOPE")
+        fi
+        if [ "$AUDIT" = "true" ]; then
+          ARGS+=("--audit")
+        fi
         npx -y svelte-doctor-cli@latest "${ARGS[@]}" || true
         JSON_ARGS=("$DIRECTORY" "--json" "--yes")
         if [ -n "$DIFF_BASE" ]; then
@@ -65,8 +94,38 @@ runs:
         if [ -n "$PROJECT" ]; then
           JSON_ARGS+=("--project" "$PROJECT")
         fi
+        if [ -n "$SCOPE" ]; then
+          JSON_ARGS+=("--scope" "$SCOPE")
+        fi
+        if [ "$AUDIT" = "true" ]; then
+          JSON_ARGS+=("--audit")
+        fi
         npx -y svelte-doctor-cli@latest "${JSON_ARGS[@]}" > "$REPORT_PATH"
         echo "report-path=$REPORT_PATH" >> "$GITHUB_OUTPUT"
+        if [ "$SARIF" = "true" ]; then
+          SARIF_ARGS=("$DIRECTORY" "--sarif" "--sarif-file" "$SARIF_PATH" "--yes")
+          if [ -n "$DIFF_BASE" ]; then
+            SARIF_ARGS+=("--diff" "$DIFF_BASE")
+          fi
+          if [ -n "$PROJECT" ]; then
+            SARIF_ARGS+=("--project" "$PROJECT")
+          fi
+          if [ -n "$SCOPE" ]; then
+            SARIF_ARGS+=("--scope" "$SCOPE")
+          fi
+          if [ "$AUDIT" = "true" ]; then
+            SARIF_ARGS+=("--audit")
+          fi
+          npx -y svelte-doctor-cli@latest "${SARIF_ARGS[@]}" || true
+          echo "sarif-path=$SARIF_PATH" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Upload SARIF to GitHub Code Scanning
+      if: ${{ inputs.sarif == 'true' && inputs.upload-sarif == 'true' }}
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ steps.run.outputs.sarif-path }}
+        category: svelte-doctor
 
     - name: Compute score
       id: score
