@@ -47,6 +47,22 @@ describe("validateConfig", () => {
     ).toThrow(/overrides\[0\]\.files" must be string\[\]/);
   });
 
+  it("accepts customRulesOnly as boolean", () => {
+    const r = validateConfig({ customRulesOnly: true }, "test.json");
+    expect(r.customRulesOnly).toBe(true);
+  });
+
+  it("rejects customRulesOnly as non-boolean", () => {
+    expect(() =>
+      validateConfig({ customRulesOnly: "yes" }, "test.json"),
+    ).toThrow(/"customRulesOnly" must be a boolean/);
+  });
+
+  it("accepts adoptExistingLintConfig as boolean", () => {
+    const r = validateConfig({ adoptExistingLintConfig: false }, "test.json");
+    expect(r.adoptExistingLintConfig).toBe(false);
+  });
+
   it("attaches actionable hint to SvelteDoctorError", () => {
     try {
       validateConfig({ lint: "yes" }, "test.json");

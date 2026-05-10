@@ -17,17 +17,28 @@ inputs:
     required: false
     default: "none"
   github-token:
-    description: "GitHub token. When provided on pull_request events, diagnostics are posted as a PR comment."
+    description: "GitHub token. When provided on pull_request events, diagnostics are posted (and updated) as a single PR comment."
     required: false
+  project:
+    description: "Workspace project(s) to scan (comma-separated)."
+    required: false
+  node-version:
+    description: "Node.js version to use."
+    required: false
+    default: "22"
 
 outputs:
   score:
     description: "Health score 0–100 (or empty when score could not be computed)."
-    value: ${{ steps.run.outputs.score }}
+    value: ${{ steps.score.outputs.score }}
 
 runs:
   using: "composite"
   steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
     - name: Run svelte-doctor-cli
       id: run
       shell: bash
@@ -35,36 +46,67 @@ runs:
         DIRECTORY: ${{ inputs.directory }}
         DIFF_BASE: ${{ inputs.diff }}
         FAIL_ON: ${{ inputs.fail-on }}
+        PROJECT: ${{ inputs.project }}
       run: |
         set -e
-        ARGS=("$DIRECTORY" "--annotations" "--fail-on" "$FAIL_ON")
+        ARGS=("$DIRECTORY" "--annotations" "--fail-on" "$FAIL_ON" "--yes")
         if [ -n "$DIFF_BASE" ]; then
           ARGS+=("--diff" "$DIFF_BASE")
         fi
+        if [ -n "$PROJECT" ]; then
+          ARGS+=("--project" "$PROJECT")
+        fi
         REPORT_PATH="${RUNNER_TEMP:-/tmp}/svelte-doctor-cli-report.json"
         npx -y svelte-doctor-cli@latest "${ARGS[@]}" || true
-        npx -y svelte-doctor-cli@latest "$DIRECTORY" --json ${DIFF_BASE:+--diff "$DIFF_BASE"} > "$REPORT_PATH"
-        SCORE=$(node -e "const r=require('$REPORT_PATH'); process.stdout.write(String(r?.score?.score ?? ''));")
-        echo "score=$SCORE" >> "$GITHUB_OUTPUT"
+        JSON_ARGS=("$DIRECTORY" "--json" "--yes")
+        if [ -n "$DIFF_BASE" ]; then
+          JSON_ARGS+=("--diff" "$DIFF_BASE")
+        fi
+        if [ -n "$PROJECT" ]; then
+          JSON_ARGS+=("--project" "$PROJECT")
+        fi
+        npx -y svelte-doctor-cli@latest "${JSON_ARGS[@]}" > "$REPORT_PATH"
         echo "report-path=$REPORT_PATH" >> "$GITHUB_OUTPUT"
+
+    - name: Compute score
+      id: score
+      if: always()
+      shell: bash
+      env:
+        DIRECTORY: ${{ inputs.directory }}
+        PROJECT: ${{ inputs.project }}
+      run: |
+        # --score is an output-collection step, not a gate. Force --fail-on none
+        # so the composite action doesn't fail under `set -e -o pipefail`.
+        SCORE_ARGS=("$DIRECTORY" "--score" "--fail-on" "none" "--yes")
+        if [ -n "$PROJECT" ]; then
+          SCORE_ARGS+=("--project" "$PROJECT")
+        fi
+        SCORE=$(npx -y svelte-doctor-cli@latest "${SCORE_ARGS[@]}" 2>/dev/null | tail -1 | tr -d '[:space:]') || true
+        if [[ -n "$SCORE" && "$SCORE" =~ ^[0-9]+$ ]]; then
+          echo "score=$SCORE" >> "$GITHUB_OUTPUT"
+        fi
 
     - name: Comment on PR
       if: ${{ inputs.github-token != '' && github.event_name == 'pull_request' }}
       uses: actions/github-script@v7
       env:
         REPORT_PATH: ${{ steps.run.outputs.report-path }}
+        SVELTE_DOCTOR_SCORE: ${{ steps.score.outputs.score }}
       with:
         github-token: ${{ inputs.github-token }}
         script: |
           const fs = require('fs');
           const report = JSON.parse(fs.readFileSync(process.env.REPORT_PATH, 'utf8'));
-          const score = report?.score?.score;
+          const score = process.env.SVELTE_DOCTOR_SCORE || report?.score?.score;
           const label = report?.score?.label;
           const total = report?.summary?.total ?? 0;
+          const marker = '<!-- svelte-doctor-cli -->';
           const lines = [];
-          lines.push(`### svelte-doctor-cli`);
+          lines.push(marker);
+          lines.push('### svelte-doctor-cli');
           lines.push('');
-          lines.push(`**Score:** ${score ?? 'n/a'} / 100 — ${label ?? 'n/a'}`);
+          lines.push(`**Score:** ${score ?? 'n/a'} / 100${label ? ` — ${label}` : ''}`);
           lines.push(`**Issues:** ${total}`);
           if (total > 0) {
             lines.push('');
@@ -78,9 +120,23 @@ runs:
               lines.push(`…and ${report.diagnostics.length - 30} more.`);
             }
           }
-          await github.rest.issues.createComment({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
+          const body = lines.join('\n');
+
+          const { data: comments } = await github.rest.issues.listComments({
+            ...context.repo,
             issue_number: context.issue.number,
-            body: lines.join('\n'),
           });
+          const previous = comments.find((c) => c.body?.startsWith(marker));
+          if (previous) {
+            await github.rest.issues.updateComment({
+              ...context.repo,
+              comment_id: previous.id,
+              body,
+            });
+          } else {
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+          }

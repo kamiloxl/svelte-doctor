@@ -73,6 +73,7 @@ export interface SvelteDoctorConfig {
   failOn?: "error" | "warning" | "none";
   respectInlineDisables?: boolean;
   adoptExistingLintConfig?: boolean;
+  customRulesOnly?: boolean;
 }
 
 export interface JsonReportSummary {

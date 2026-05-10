@@ -22,6 +22,19 @@ const AGENT_TARGETS: AgentTarget[] = [
   { id: "windsurf", displayName: "Windsurf (rules)", path: ".windsurf/rules", anchor: "project", binaries: ["windsurf"] },
   { id: "copilot", displayName: "GitHub Copilot (instructions)", path: ".github/copilot-instructions.md", anchor: "project", binaries: ["gh", "copilot"] },
   { id: "opencode", displayName: "OpenCode (AGENTS.md)", path: "AGENTS.md", anchor: "project", binaries: ["opencode"] },
+  { id: "gemini", displayName: "Gemini CLI (GEMINI.md)", path: "GEMINI.md", anchor: "project", binaries: ["gemini"] },
+  { id: "gemini-user", displayName: "Gemini CLI (user)", path: ".gemini/skills/svelte-doctor-cli", anchor: "home", binaries: ["gemini"] },
+  { id: "droid", displayName: "Droid (rules)", path: ".droid/rules", anchor: "project", binaries: ["droid"] },
+  { id: "cline", displayName: "Cline (rules)", path: ".clinerules/svelte-doctor-cli.md", anchor: "project", binaries: ["cline"] },
+  { id: "aider", displayName: "Aider (CONVENTIONS.md)", path: "CONVENTIONS.md", anchor: "project", binaries: ["aider"] },
+  { id: "roo", displayName: "Roo Code (rules)", path: ".roo/rules/svelte-doctor-cli.md", anchor: "project", binaries: ["roo"] },
+  { id: "continue", displayName: "Continue (rules)", path: ".continue/rules/svelte-doctor-cli.md", anchor: "project", binaries: ["continue"] },
+  { id: "augment", displayName: "Augment (guidelines)", path: ".augment/rules/svelte-doctor-cli.md", anchor: "project", binaries: ["augment"] },
+  { id: "trae", displayName: "Trae (rules)", path: ".trae/rules/svelte-doctor-cli.md", anchor: "project", binaries: ["trae"] },
+  { id: "zed", displayName: "Zed (rules)", path: ".rules/svelte-doctor-cli.md", anchor: "project", binaries: ["zed"] },
+  { id: "kilo", displayName: "Kilo Code (rules)", path: ".kilocode/rules/svelte-doctor-cli.md", anchor: "project", binaries: ["kilo"] },
+  { id: "qwen", displayName: "Qwen Code (QWEN.md)", path: "QWEN.md", anchor: "project", binaries: ["qwen"] },
+  { id: "amp", displayName: "Amp (AGENTS.md)", path: "AGENTS.md", anchor: "project", binaries: ["amp"] },
 ];
 
 const PATH_DIRS = (process.env.PATH ?? "").split(delimiter).filter(Boolean);
@@ -160,12 +173,12 @@ export async function runInstallSkill(options: InstallOptions = {}): Promise<voi
     return;
   }
 
-  const written: string[] = [];
+  const written = new Set<string>();
   for (const t of detected) {
-    written.push(writeSkill(t, projectRoot));
+    written.add(writeSkill(t, projectRoot));
   }
   process.stdout.write(
-    `${pc.green("✓")} Installed svelte-doctor-cli skill in ${written.length} location${written.length === 1 ? "" : "s"}:\n`,
+    `${pc.green("✓")} Installed svelte-doctor-cli skill in ${written.size} location${written.size === 1 ? "" : "s"}:\n`,
   );
   for (const path of written) {
     process.stdout.write(`  ${pc.dim(path)}\n`);

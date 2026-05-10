@@ -40,6 +40,8 @@ describe("resolveConfig", () => {
     expect(r.deadCode).toBe(true);
     expect(r.failOn).toBe("none");
     expect(r.ignore.rules).toEqual([]);
+    expect(r.adoptExistingLintConfig).toBe(true);
+    expect(r.customRulesOnly).toBe(false);
   });
 
   it("CLI overrides win over config", () => {

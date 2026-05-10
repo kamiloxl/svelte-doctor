@@ -66,6 +66,11 @@ export function validateConfig(
       errors.push(`${source}: "adoptExistingLintConfig" must be a boolean`);
     } else out.adoptExistingLintConfig = raw.adoptExistingLintConfig;
   }
+  if (raw.customRulesOnly !== undefined) {
+    if (typeof raw.customRulesOnly !== "boolean") {
+      errors.push(`${source}: "customRulesOnly" must be a boolean`);
+    } else out.customRulesOnly = raw.customRulesOnly;
+  }
   if (raw.failOn !== undefined) {
     if (raw.failOn !== "error" && raw.failOn !== "warning" && raw.failOn !== "none") {
       errors.push(`${source}: "failOn" must be "error" | "warning" | "none"`);
@@ -151,6 +156,7 @@ export function resolveConfig(
     failOn: merged.failOn ?? "none",
     respectInlineDisables: merged.respectInlineDisables ?? true,
     adoptExistingLintConfig: merged.adoptExistingLintConfig ?? true,
+    customRulesOnly: merged.customRulesOnly ?? false,
     ignore: {
       rules: merged.ignore?.rules ?? [],
       files: merged.ignore?.files ?? [],

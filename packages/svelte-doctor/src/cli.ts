@@ -18,6 +18,7 @@ import {
   NON_VERBOSE_RULES_PER_CATEGORY,
   SCORE_BAR_WIDTH,
   SUPPRESSION_DIRECTIVE,
+  SUPPRESSION_NEAR_MISS_MAX_LINES,
   VERSION,
 } from "./constants.js";
 import { scan } from "./scan.js";
@@ -281,6 +282,10 @@ function explainDiagnostic(result: DiagnoseResult, target: string): string {
     lines.push(`  ${pc.dim("suppress:")} ${suppressionHint(d)}`);
     if (d.suppressionHint) {
       lines.push(`  ${pc.yellow("hint:")} ${d.suppressionHint}`);
+    } else {
+      lines.push(
+        `  ${pc.dim("nearby suppressions:")} none found within ${SUPPRESSION_NEAR_MISS_MAX_LINES} lines`,
+      );
     }
   }
   return lines.join("\n");
@@ -316,6 +321,51 @@ function isMachineMode(opts: CliOptions): boolean {
       opts.why ||
       opts.watch,
   );
+}
+
+const CI_ENV_VARS = [
+  "CI",
+  "GITHUB_ACTIONS",
+  "GITLAB_CI",
+  "BUILDKITE",
+  "JENKINS_URL",
+  "TF_BUILD",
+  "CIRCLECI",
+  "TRAVIS",
+  "DRONE",
+  "CLAUDECODE",
+  "CLAUDE_CODE",
+  "CURSOR_AGENT",
+  "OPENCODE",
+];
+
+function isNonInteractive(opts: CliOptions): boolean {
+  if (opts.yes || opts.full) return true;
+  if (opts.project) return true;
+  if (isMachineMode(opts)) return true;
+  if (!process.stdin.isTTY) return true;
+  return CI_ENV_VARS.some((v) => Boolean(process.env[v]));
+}
+
+async function pickWorkspaceProjects(
+  directory: string,
+  opts: CliOptions,
+): Promise<string | undefined> {
+  if (opts.project) return opts.project;
+  if (isNonInteractive(opts)) return undefined;
+
+  const { discoverWorkspaceProjects } = await import("./utils/workspace.js");
+  const projects = await discoverWorkspaceProjects(resolve(directory));
+  if (projects.length <= 1) return undefined;
+
+  const { promptWorkspaceProjects } = await import("./utils/prompt-workspace.js");
+  const result = await promptWorkspaceProjects(resolve(directory));
+  if (!result) {
+    process.stderr.write(`${pc.dim("Cancelled.")}\n`);
+    process.exit(130);
+  }
+  if (result.selectedNames === null) return undefined;
+  return result.selectedNames.join(",");
 }
 
 async function pickEnabledRuleIds(
@@ -497,6 +547,8 @@ export async function run(argv: readonly string[]): Promise<void> {
           }
 
           const enabledRuleIds = await pickEnabledRuleIds(opts);
+          const projectFilter = await pickWorkspaceProjects(directory, opts);
+          if (projectFilter !== undefined) opts.project = projectFilter;
 
           if (opts.watch) {
             const { runWatch } = await import("./watch.js");

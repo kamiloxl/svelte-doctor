@@ -98,14 +98,16 @@ function buildEslint(
   ignoreRules: string[],
   ignoreFiles: string[],
   userConfigs: Linter.Config[],
+  customRulesOnly: boolean,
 ): ESLint {
-  const baseConfig = pickPreset(project);
   const overrideRules: Linter.RulesRecord = Object.fromEntries(
     ignoreRules.map((id) => [id, "off" as const]),
   );
   const overrides: Linter.Config | null = ignoreRules.length
     ? { rules: overrideRules }
     : null;
+
+  const presetConfigs = customRulesOnly ? [] : [pickPreset(project)];
 
   return new ESLint({
     cwd: project.root,
@@ -132,7 +134,7 @@ function buildEslint(
           },
         },
       },
-      baseConfig,
+      ...presetConfigs,
       ...userConfigs,
       ...(overrides ? [overrides] : []),
     ],
@@ -151,12 +153,19 @@ async function runLint(
   ignoreFiles: string[],
   diffFiles: string[] | null,
   userConfigs: Linter.Config[],
+  customRulesOnly: boolean,
 ): Promise<{
   diagnostics: Diagnostic[];
   sources: Map<string, string>;
   lintedFilePaths: Set<string>;
 }> {
-  const eslint = buildEslint(project, ignoreRules, ignoreFiles, userConfigs);
+  const eslint = buildEslint(
+    project,
+    ignoreRules,
+    ignoreFiles,
+    userConfigs,
+    customRulesOnly,
+  );
   const targets =
     diffFiles && diffFiles.length ? diffFiles : defaultTargetsFor(project);
   if (!targets.length) {
@@ -240,7 +249,9 @@ async function loadUserConfigsIfRequested(
   rootDir: string,
   config: ReturnType<typeof resolveConfig>,
 ): Promise<Linter.Config[]> {
-  if (!config.adoptExistingLintConfig) return [];
+  // customRulesOnly implies user wants their own rules — always adopt the
+  // user's eslint config in that mode, regardless of adoptExistingLintConfig.
+  if (!config.adoptExistingLintConfig && !config.customRulesOnly) return [];
   const configPath = findUserEslintConfig(rootDir);
   if (!configPath) return [];
   const userConfigs = await loadUserEslintConfig(configPath);
@@ -297,6 +308,7 @@ async function scanSingleProject(
       config.ignore.files ?? [],
       diffFiles,
       userConfigs,
+      config.customRulesOnly,
     );
     diagnostics.push(...lintResult.diagnostics);
     sources = lintResult.sources;
