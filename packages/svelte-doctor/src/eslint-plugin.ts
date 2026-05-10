@@ -6,6 +6,10 @@ import { rule as noMutationOfProps } from "./plugin/rules/svelte5/no-mutation-of
 import { rule as noEffectWithoutCleanup } from "./plugin/rules/svelte5/no-effect-without-cleanup.js";
 import { rule as noCascadingStateInEffect } from "./plugin/rules/svelte5/no-cascading-state-in-effect.js";
 import { rule as noCircularReactivity } from "./plugin/rules/svelte5/no-circular-reactivity.js";
+import { rule as noEffectChain } from "./plugin/rules/svelte5/no-effect-chain.js";
+import { rule as noHydrationMismatch } from "./plugin/rules/svelte5/no-hydration-mismatch.js";
+import { rule as preferLetOverState } from "./plugin/rules/svelte5/prefer-let-over-state.js";
+import { rule as noSequentialAwaitInLoad } from "./plugin/rules/sveltekit/no-sequential-await-in-load.js";
 import { rule as noArrayIndexAsEachKey } from "./plugin/rules/performance/no-array-index-as-each-key.js";
 import { rule as noUnsafeHtmlBinding } from "./plugin/rules/security/no-unsafe-html-binding.js";
 import { rule as noHrefJavascript } from "./plugin/rules/security/no-href-javascript.js";
@@ -24,6 +28,9 @@ const universalRules: Record<string, Rule.RuleModule> = {
   "no-effect-without-cleanup": noEffectWithoutCleanup,
   "no-cascading-state-in-effect": noCascadingStateInEffect,
   "no-circular-reactivity": noCircularReactivity,
+  "no-effect-chain": noEffectChain,
+  "no-hydration-mismatch": noHydrationMismatch,
+  "prefer-let-over-state": preferLetOverState,
   "no-array-index-as-each-key": noArrayIndexAsEachKey,
   "no-unsafe-html-binding": noUnsafeHtmlBinding,
   "no-href-javascript": noHrefJavascript,
@@ -33,6 +40,7 @@ const universalRules: Record<string, Rule.RuleModule> = {
 const sveltekitOnlyRules: Record<string, Rule.RuleModule> = {
   "server-only-import-in-client": serverOnlyImportInClient,
   "no-fetch-in-load-without-event": noFetchInLoadWithoutEvent,
+  "no-sequential-await-in-load": noSequentialAwaitInLoad,
 };
 
 const svelte4OnlyRules: Record<string, Rule.RuleModule> = {
@@ -55,6 +63,9 @@ const recommendedRules: Linter.RulesRecord = {
   [`${RULE_PREFIX}/no-effect-without-cleanup`]: "warn",
   [`${RULE_PREFIX}/no-cascading-state-in-effect`]: "warn",
   [`${RULE_PREFIX}/no-circular-reactivity`]: "warn",
+  [`${RULE_PREFIX}/no-effect-chain`]: "warn",
+  [`${RULE_PREFIX}/no-hydration-mismatch`]: "warn",
+  [`${RULE_PREFIX}/prefer-let-over-state`]: "warn",
   [`${RULE_PREFIX}/no-array-index-as-each-key`]: "warn",
   [`${RULE_PREFIX}/no-unsafe-html-binding`]: "error",
   [`${RULE_PREFIX}/no-href-javascript`]: "error",
@@ -65,6 +76,7 @@ const sveltekitRules: Linter.RulesRecord = {
   ...recommendedRules,
   [`${RULE_PREFIX}/server-only-import-in-client`]: "error",
   [`${RULE_PREFIX}/no-fetch-in-load-without-event`]: "error",
+  [`${RULE_PREFIX}/no-sequential-await-in-load`]: "warn",
 };
 
 const svelte4UniversalRules: Linter.RulesRecord = {

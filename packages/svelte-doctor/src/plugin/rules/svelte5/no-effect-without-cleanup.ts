@@ -21,6 +21,20 @@ const NEEDS_CLEANUP_GLOBALS = new Set([
   "addEventListener",
   "setInterval",
   "setTimeout",
+  "requestAnimationFrame",
+  "requestIdleCallback",
+  "subscribe",
+]);
+
+const NEEDS_CLEANUP_CONSTRUCTORS = new Set([
+  "WebSocket",
+  "EventSource",
+  "MutationObserver",
+  "ResizeObserver",
+  "IntersectionObserver",
+  "PerformanceObserver",
+  "AbortController",
+  "BroadcastChannel",
 ]);
 
 function isEffectCall(node: CallExpression): boolean {
@@ -70,6 +84,16 @@ function bodyRegistersListener(
     if (current.type === "CallExpression") {
       const callee = getCallee(current);
       if (callee.name && NEEDS_CLEANUP_GLOBALS.has(callee.name)) return true;
+    }
+    if (current.type === "NewExpression") {
+      const ctor = (current as { callee?: { type?: string; name?: string } }).callee;
+      if (
+        ctor?.type === "Identifier" &&
+        ctor.name &&
+        NEEDS_CLEANUP_CONSTRUCTORS.has(ctor.name)
+      ) {
+        return true;
+      }
     }
     if (current.type === "FunctionExpression" || current.type === "ArrowFunctionExpression") {
       continue;
