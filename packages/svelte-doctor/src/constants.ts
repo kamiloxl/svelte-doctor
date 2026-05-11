@@ -13,6 +13,7 @@ export function labelForScore(score: number): ScoreLabel {
   return "Critical";
 }
 
+// Used for sorting/display order — not for score calculation (see SEVERITY_PENALTY_WEIGHT).
 export const SEVERITY_WEIGHT: Record<Severity, number> = {
   error: 3,
   warning: 1,

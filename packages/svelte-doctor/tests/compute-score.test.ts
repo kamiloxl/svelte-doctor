@@ -105,4 +105,18 @@ describe("computeScore", () => {
     expect(score).toBeLessThanOrEqual(75);
     expect(label).toBe("Needs work");
   });
+
+  it("info severity diagnostics do not affect the score", () => {
+    const d = make({ ruleId: "some-info-rule", severity: "info", category: "architecture" });
+    const { score } = computeScore(repeat(d, 100));
+    expect(score).toBe(100);
+  });
+
+  it("same ruleId at different severities accumulates separate penalties", () => {
+    const asError = make({ ruleId: "some-rule", severity: "error", category: "security" });
+    const asWarning = make({ ruleId: "some-rule", severity: "warning", category: "security" });
+    const { score: errorOnlyScore } = computeScore([asError]);
+    const { score: mixedScore } = computeScore([asError, asWarning]);
+    expect(mixedScore).toBeLessThan(errorOnlyScore);
+  });
 });
