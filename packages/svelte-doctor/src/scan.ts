@@ -4,7 +4,10 @@ import svelteParser from "svelte-eslint-parser";
 import tsParser from "@typescript-eslint/parser";
 import svelteDoctorPlugin from "./eslint-plugin.js";
 import {
+  CATEGORY_PENALTY_WEIGHT,
+  PENALTY_SCALE,
   RULE_PREFIX,
+  SEVERITY_PENALTY_WEIGHT,
   labelForScore,
 } from "./constants.js";
 import { allRuleMeta } from "./plugin/rule-meta.js";
@@ -235,16 +238,30 @@ function loadSourcesForFiles(
 }
 
 export function computeScore(diagnostics: Diagnostic[]): Score {
-  const errorRules = new Set<string>();
-  const warningRules = new Set<string>();
+  const ruleGroups = new Map<
+    string,
+    { severity: Severity; category: Category; count: number }
+  >();
   for (const d of diagnostics) {
-    if (d.severity === "error") errorRules.add(d.ruleId);
-    else if (d.severity === "warning") warningRules.add(d.ruleId);
+    const existing = ruleGroups.get(d.ruleId);
+    if (existing) {
+      existing.count++;
+    } else {
+      ruleGroups.set(d.ruleId, {
+        severity: d.severity,
+        category: d.category,
+        count: 1,
+      });
+    }
   }
-  // TODO: Task 2 will rewrite this scoring logic with new weighted formula
-  const penalty =
-    errorRules.size * 1.5 +
-    warningRules.size * 0.75;
+
+  let penalty = 0;
+  for (const { severity, category, count } of ruleGroups.values()) {
+    const sw = SEVERITY_PENALTY_WEIGHT[severity];
+    const cw = CATEGORY_PENALTY_WEIGHT[category];
+    penalty += PENALTY_SCALE * sw * cw * Math.log2(count + 1);
+  }
+
   const score = Math.max(0, Math.round(100 - penalty));
   return { score, label: labelForScore(score) };
 }
