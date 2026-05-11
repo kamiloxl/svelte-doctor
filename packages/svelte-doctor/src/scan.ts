@@ -243,11 +243,12 @@ export function computeScore(diagnostics: Diagnostic[]): Score {
     { severity: Severity; category: Category; count: number }
   >();
   for (const d of diagnostics) {
-    const existing = ruleGroups.get(d.ruleId);
+    const key = `${d.ruleId}:${d.severity}:${d.category}`;
+    const existing = ruleGroups.get(key);
     if (existing) {
       existing.count++;
     } else {
-      ruleGroups.set(d.ruleId, {
+      ruleGroups.set(key, {
         severity: d.severity,
         category: d.category,
         count: 1,
