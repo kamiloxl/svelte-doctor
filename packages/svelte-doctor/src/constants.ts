@@ -19,8 +19,22 @@ export const SEVERITY_WEIGHT: Record<Severity, number> = {
   info: 0,
 };
 
-export const ERROR_RULE_PENALTY = 1.5;
-export const WARNING_RULE_PENALTY = 0.75;
+export const PENALTY_SCALE = 0.5;
+
+export const SEVERITY_PENALTY_WEIGHT: Record<Severity, number> = {
+  error: 3.0,
+  warning: 1.0,
+  info: 0,
+};
+
+export const CATEGORY_PENALTY_WEIGHT: Record<Category, number> = {
+  security: 3.0,
+  "state-effects": 1.5,
+  performance: 1.0,
+  accessibility: 1.0,
+  architecture: 0.5,
+  "dead-code": 0.5,
+};
 export const SUPPRESSION_NEAR_MISS_MAX_LINES = 10;
 
 export const BUILTIN_IGNORED_DIRECTORIES = [

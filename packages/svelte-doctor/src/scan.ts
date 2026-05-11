@@ -4,9 +4,7 @@ import svelteParser from "svelte-eslint-parser";
 import tsParser from "@typescript-eslint/parser";
 import svelteDoctorPlugin from "./eslint-plugin.js";
 import {
-  ERROR_RULE_PENALTY,
   RULE_PREFIX,
-  WARNING_RULE_PENALTY,
   labelForScore,
 } from "./constants.js";
 import { allRuleMeta } from "./plugin/rule-meta.js";
@@ -243,9 +241,10 @@ export function computeScore(diagnostics: Diagnostic[]): Score {
     if (d.severity === "error") errorRules.add(d.ruleId);
     else if (d.severity === "warning") warningRules.add(d.ruleId);
   }
+  // TODO: Task 2 will rewrite this scoring logic with new weighted formula
   const penalty =
-    errorRules.size * ERROR_RULE_PENALTY +
-    warningRules.size * WARNING_RULE_PENALTY;
+    errorRules.size * 1.5 +
+    warningRules.size * 0.75;
   const score = Math.max(0, Math.round(100 - penalty));
   return { score, label: labelForScore(score) };
 }
