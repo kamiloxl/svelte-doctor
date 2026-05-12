@@ -15,7 +15,7 @@ importers:
         specifier: ^5.6.0
         version: 5.9.3
 
-  packages/svelte-doctor-cli:
+  packages/svelte-doctor:
     dependencies:
       '@typescript-eslint/parser':
         specifier: ^8.18.0
